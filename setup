@@ -1,0 +1,170 @@
+#!/bin/ksh -e
+
+# Setup utility for creating an OmniOS build environment.
+
+# Determine the running OmniOS release.
+
+ips=https://pkg.omniosce.org
+github=https://github.com
+
+version=`uname -v`
+
+if [[ "$version" != omnios-* ]]; then
+	echo "This does not appear to be an OmniOS system."
+	exit 1
+fi
+
+release=`echo $version | cut -d- -f2`
+branch=$release
+[ "$release" = master ] && release=bloody && branch=master
+
+ask()
+{
+	typeset a=
+
+	echo "$* (y/n) \\c"
+	while [[ "$a" != [yYnN] ]]; do
+		read a
+	done
+	[[ "$a" = [yY] ]]
+}
+
+install_pkg()
+{
+	sudo pkg install "$1"
+}
+
+check_pkg()
+{
+	typeset pkg="$1"
+
+	echo "--- checking that $pkg is installed"
+	if ! pkg list -q "$pkg"; then
+		echo "The $pkg package is not installed on this system."
+		if ask "Install with sudo?"; then
+			install_pkg "$pkg"
+		else
+			echo "Aborting setup."
+			exit 1
+		fi
+	fi
+
+}
+
+check_publisher()
+{
+	typeset publisher="$1"
+
+	echo "--- checking that extra.omnios publisher is set"
+	if ! pkg publisher -H | egrep -s '^extra.omnios '; then
+		echo "The extra.omnios publisher is not present."
+		if ask "Add it?"; then
+			sudo pkg set-publisher \
+			    -g $ips/$release/extra extra.omnios || exit 1
+
+			pkg publisher
+		else
+			echo "Aborting setup."
+			exit 1
+		fi
+	fi
+}
+
+gitclone()
+{
+	typeset repo=$1
+
+	echo "--- Cloning $repo from $github/$gituser"
+	git clone -b $branch $github/$gituser/$repo.git $wd/$repo
+
+	(
+		cd $wd/$repo
+		git remote add upstream $github/omniosorg/$repo
+		if [ "$repo:$branch" = "illumos-omnios:master" ]; then
+			git remote add upstream_gate \
+			    $github/illumos/illumos-gate
+			git remote add upstream_joyent \
+			    $github/joyent/illumos-joyent
+		fi
+	)
+}
+
+install_config()
+{
+	echo "--- Installing configuration file"
+	cat << EOM > $HOME/.omni
+gituser=$gituser
+release=$release
+branch=$branch
+wd=$wd
+EOM
+}
+
+install_env()
+{
+	echo "--- Install omnios.env"
+	sed "
+		s^__WORKINGTREE__^$wd^
+		s^__BUILDNUM__^${release:1}^
+	" < etc/template.env > $wd/omnios.env
+}
+
+install_site()
+{
+	echo "--- Install site.sh"
+	cat << EOM >> $wd/omnios-build/lib/site.sh
+PREBUILT_ILLUMOS=$wd/illumos-omnios
+PKGSRVR=file://$wd/repo
+SKIP_KAYAK_KERNEL=1
+ROOT_OK=1
+EOM
+}
+
+echo "This system is running OmniOS $release"
+
+wd="$1"
+gituser="$2"
+
+if [ -z "$wd" -o -z "$gituser" ]; then
+	echo "Syntax: setup <working directory> <git username>"
+	exit 1
+fi
+
+if [ -d "$wd" ]; then
+	if [ `find $wd | wc -l` -ne 1 ]; then
+		echo "$wd is not empty. Aborting setup."
+		exit 1
+	fi
+fi
+
+if ! mkdir -p "$wd"; then
+	echo "Could not create $wd directory."
+	exit 1
+else
+	echo "--- Using $wd for installation."
+fi
+
+check_publisher
+check_pkg developer/illumos-tools
+check_pkg developer/omnios-build-tools
+check_pkg ooce/developer/build/ant
+check_pkg ooce/library/freetype2
+check_pkg ooce/runtime/python-36
+
+gitclone illumos-omnios
+gitclone omnios-build
+
+install_config
+install_env
+install_site
+
+echo
+if ask "Create symlink in /usr/bin?"; then
+	[ -h /usr/bin/omni ] && rm -f /usr/bin/omni
+	ln -s `pwd`/bin/omni /usr/bin/omni
+	echo
+	echo "Invoke the utility by typing 'omni'"
+else
+	echo "Invoke the utility by typing '`pwd`/bin/omni'"
+fi
+

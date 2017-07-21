@@ -1,0 +1,201 @@
+#!/bin/ksh -e
+
+CFGFILE=$HOME/.omni
+. $CFGFILE
+
+omnios_clone="$wd/illumos-omnios"
+build_clone="$wd/omnios-build"
+
+banner()
+{
+	echo
+	echo "*** $*"
+	echo
+}
+
+repo_branch()
+{
+	typeset repo=${1:?repo}
+	(
+		cd $repo
+		git status --short --branch -uno . | sed '
+			s/\..*//
+			s/.* //
+			q
+		    '
+	)
+}
+
+joyent_commit()
+{
+	(
+		cd $omnios_clone
+		git show master:README.OmniOS | \
+		    grep 'Last illumos-joyent' | \
+		    awk '{print $4}'
+	)
+}
+
+check_repo()
+{
+	typeset repo="${1:?}"
+	typeset branch="${2:?}"
+
+	if [ -z "$repo" ]; then
+		echo "Repository path is not set in $CFGFILE"
+		exit 1
+	fi
+
+	banner "Checking repository $repo ($branch)"
+
+	typeset actual_branch="`repo_branch "$repo"`"
+
+	if [ "$actual_branch" != "$branch" ]; then
+		echo "$repo is not on $branch branch ($actual_branch)"
+		exit 1
+	fi
+}
+
+update_bloody()
+{
+	(
+		cd $omnios_clone
+		git checkout closed/README.ON-BINARIES.i386
+		git checkout $branch
+		git pull upstream $branch
+
+		for branch in upstream_gate upstream_joyent; do
+			banner "Updating $branch branch"
+			git checkout $branch
+			git pull $branch master
+			git push -u origin $branch
+		done
+
+		git checkout $branch
+		git push --all
+	)
+}
+
+update_stable()
+{
+	(
+		cd $omnios_clone
+		git checkout closed/README.ON-BINARIES.i386
+		git pull upstream $branch
+		git push -u origin $branch
+	)
+}
+
+update_omnios()
+{
+	check_repo "$omnios_clone" $branch
+	banner "Updating illumos-omnios $release branch"
+	if [ "$release" = bloody ]; then
+		update_bloody
+	else
+		update_stable
+	fi
+}
+
+upstream_diff()
+{
+	if [ "$release" != bloody ]; then
+		echo "Command not available for $release release"
+		return
+	fi
+	check_repo "$omnios_clone" $branch
+	(
+		cd $omnios_clone
+
+		echo "GATE:"
+		echo
+		git log --reverse --no-merges master..upstream_gate | sed -n '
+			/^commit / {
+				s/commit //
+				p
+			}
+			/    [0-9]\{4\} /p
+		' | paste -d\  - -
+
+		echo
+		echo "JOYENT:"
+		echo
+
+		git checkout -q upstream_joyent
+		git log --reverse --no-merges `joyent_commit`.. | sed -n '
+			/^commit /h
+			/    OS-/ {
+				H
+				x
+				p
+			}
+		' | paste -d\  - -
+		git checkout -q $branch
+		echo
+	)
+}
+
+update_build()
+{
+        check_repo "$build_clone" $branch
+	banner "Updating $release OmniOS build"
+        (
+                cd $build_clone
+		git pull upstream $branch
+                git push --all
+        )
+}
+
+build_oi()
+{
+	banner "Starting illumos-omnios $release build..."
+	/opt/onbld/bin/nightly $wd/omnios.env &
+	nightlypid=$!
+	while [ ! -f $omnios_clone/log/nightly.log ]; do
+		sleep 1
+	done
+	tail -f $omnios_clone/log/nightly.log &
+	tailpid=$!
+	wait $nightlypid
+	kill $tailpid
+}
+
+build_omnios()
+{
+	cd $build_clone/build
+	[ -z "$USER" ] && USER=LOGNAME
+	./buildctl build continue
+}
+
+help()
+{
+	cat << EOM
+omni <operation>
+
+    update_omnios    - update your local omnios illumos environment     (uo)
+    update_build     - update your local omnios build environment       (ub)
+    upstream_diff    - show changes omnios-illumos master and upstream  (ud)
+                       (bloody only)
+    build_oi         - build omnios-illumos                             (boi)
+    build_omnios     - build OmniOS                                     (bo)
+
+NB: Ops can be abbreviated to the term shown in brackets, e.g. 'omni uo'
+	
+EOM
+}
+
+[ -z "$@" ] && help
+
+for op in "$@"; do
+    case $op in
+	uo|update_omnios)		update_omnios ;;
+	ub|update_build)		update_build ;;
+	ud|upstream_diff)		upstream_diff ;;
+	boi|build_omnios_illumos)	build_oi ;;
+	bo|build_omnios)		build_omnios ;;
+	*) 				help ;;
+    esac
+done
+
+exit 0
+
