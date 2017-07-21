@@ -52,13 +52,24 @@ Sanity Check: Looking for 'entire' incorporation.
 
 # zfs create -o mountpoint=/build data/zone/omni/ROOT/build
 
+```
+
+### Example build server setup
+
+```
+zfs create -o mountpoint=/build rpool/build
+```
+
+### For either a zone or server
+
+```
 # cd /root
+# pkg install git
 # git clone https://github.com/citrus-it/omni.git
 # cd omni
 # ./setup /build <github username>
 
 # omni build_oi
 # omni build_omnios
-
 ```
 
