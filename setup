@@ -41,7 +41,7 @@ check_pkg()
 	echo "--- checking that $pkg is installed"
 	if ! pkg list -q "$pkg"; then
 		echo "The $pkg package is not installed on this system."
-		if ask "Install with sudo?"; then
+		if ask "Install?"; then
 			install_pkg "$pkg"
 		else
 			echo "Aborting setup."

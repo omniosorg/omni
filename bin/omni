@@ -191,7 +191,7 @@ for op in "$@"; do
 	uo|update_omnios)		update_omnios ;;
 	ub|update_build)		update_build ;;
 	ud|upstream_diff)		upstream_diff ;;
-	boi|build_omnios_illumos)	build_oi ;;
+	boi|build_oi)			build_oi ;;
 	bo|build_omnios)		build_omnios ;;
 	*) 				help ;;
     esac
