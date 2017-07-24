@@ -7,6 +7,8 @@
 ips=https://pkg.omniosce.org
 github=https://github.com
 
+export LC_ALL=C
+
 version=`uname -v`
 
 if [[ "$version" != omnios-* ]]; then
@@ -74,17 +76,17 @@ gitclone()
 {
 	typeset repo=$1
 
-	echo "--- Cloning $repo from $github/$gituser"
-	git clone -b $branch $github/$gituser/$repo.git $wd/$repo
+	echo "--- Cloning $repo from ${github}/$gituser"
+	git clone -b $branch ${github}/$gituser/$repo.git $wd/$repo
 
 	(
 		cd $wd/$repo
-		git remote add upstream $github/omniosorg/$repo
+		git remote add upstream ${github}/omniosorg/$repo
 		if [ "$repo:$branch" = "illumos-omnios:master" ]; then
 			git remote add upstream_gate \
-			    $github/illumos/illumos-gate
+			    ${github}/illumos/illumos-gate
 			git remote add upstream_joyent \
-			    $github/joyent/illumos-joyent
+			    ${github}/joyent/illumos-joyent
 		fi
 	)
 }
@@ -93,6 +95,7 @@ install_config()
 {
 	echo "--- Installing configuration file"
 	cat << EOM > $HOME/.omni
+github-${github}
 gituser=$gituser
 release=$release
 branch=$branch
@@ -122,11 +125,26 @@ EOM
 
 echo "This system is running OmniOS $release"
 
+if [ "$1" = "-ssh" ]; then
+	github=git@github.com:
+	echo "Using SSH for github access"
+	shift
+else
+	cat << EOM
+
+-- By default, HTTPS will be used to access Github.
+-- If you have configured SSH keys on github you can use SSH instead.
+
+EOM
+	if ask "Do you want to use SSH instead?"; then
+		github=git@github.com:
+	fi
+fi
 wd="$1"
 gituser="$2"
 
 if [ -z "$wd" -o -z "$gituser" ]; then
-	echo "Syntax: setup <working directory> <git username>"
+	echo "Syntax: setup [-ssh] <working directory> <git username>"
 	exit 1
 fi
 
@@ -159,7 +177,7 @@ install_env
 install_site
 
 echo
-if ask "Create symlink in /usr/bin?"; then
+if ask "Create symlink as /usr/bin/omni?"; then
 	[ -h /usr/bin/omni ] && rm -f /usr/bin/omni
 	ln -s `pwd`/bin/omni /usr/bin/omni
 	echo

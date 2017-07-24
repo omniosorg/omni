@@ -146,7 +146,7 @@ update_build()
         )
 }
 
-build_oi()
+build_illumos()
 {
 	banner "Starting illumos-omnios $release build..."
 	/opt/onbld/bin/nightly $wd/omnios.env &
@@ -176,7 +176,7 @@ omni <operation>
     update_build     - update your local omnios build environment       (ub)
     upstream_diff    - show changes omnios-illumos master and upstream  (ud)
                        (bloody only)
-    build_oi         - build omnios-illumos                             (boi)
+    build_illumos    - build omnios-illumos                             (bi)
     build_omnios     - build OmniOS                                     (bo)
 
 NB: Ops can be abbreviated to the term shown in brackets, e.g. 'omni uo'
@@ -191,7 +191,7 @@ for op in "$@"; do
 	uo|update_omnios)		update_omnios ;;
 	ub|update_build)		update_build ;;
 	ud|upstream_diff)		upstream_diff ;;
-	boi|build_oi)			build_oi ;;
+	bi|build_illumos)		build_illumos ;;
 	bo|build_omnios)		build_omnios ;;
 	*) 				help ;;
     esac

@@ -32,6 +32,7 @@ zonecfg:omni> add net
 zonecfg:omni:net> set physical=omni0
 zonecfg:omni:net> end
 zonecfg:omni> verify
+zonecfg:omni> commit
 zonecfg:omni> exit
 
 # zoneadm -z omni install
@@ -42,6 +43,7 @@ Sanity Check: Looking for 'entire' incorporation.
    Publisher: Using omnios (https://pkg.omniosce.org/r151022/core).
 ...
 
+# zoneadm -z omni boot
 # zlogin omni
 
 # ipadm create-if omni0
