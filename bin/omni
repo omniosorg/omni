@@ -6,6 +6,8 @@ CFGFILE=$HOME/.omni
 omnios_clone="$wd/illumos-omnios"
 build_clone="$wd/omnios-build"
 
+export LC_ALL=C
+
 banner()
 {
 	echo
@@ -72,7 +74,7 @@ update_bloody()
 		done
 
 		git checkout $branch
-		git push --all
+		git push -u origin --all
 	)
 }
 
@@ -81,6 +83,7 @@ update_stable()
 	(
 		cd $omnios_clone
 		git checkout closed/README.ON-BINARIES.i386
+		git checkout $branch
 		git pull upstream $branch
 		git push -u origin $branch
 	)
