@@ -71,7 +71,7 @@ zfs create -o mountpoint=/build rpool/build
 # cd omni
 # ./setup /build <github username>
 
-# omni build_oi
+# omni build_illumos
 # omni build_omnios
 ```
 
