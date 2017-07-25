@@ -61,7 +61,6 @@ update_bloody()
 	(
 		cd $omnios_clone
 		git checkout closed/README.ON-BINARIES.i386
-		git checkout $branch
 		git pull upstream $branch
 
 		for branch in upstream_gate upstream_joyent; do
@@ -72,7 +71,7 @@ update_bloody()
 		done
 
 		git checkout $branch
-		git push --all
+		git push origin --all
 	)
 }
 

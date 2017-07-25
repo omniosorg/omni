@@ -95,7 +95,7 @@ install_config()
 {
 	echo "--- Installing configuration file"
 	cat << EOM > $HOME/.omni
-github-${github}
+github=${github}
 gituser=$gituser
 release=$release
 branch=$branch
