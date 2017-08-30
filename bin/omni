@@ -13,6 +13,17 @@ banner()
 	echo
 }
 
+ask()
+{
+	typeset a=
+
+	echo "$* (y/n) \\c"
+	while [[ "$a" != [yYnN] ]]; do
+		read a
+	done
+	[[ "$a" = [yY] ]]
+}
+
 repo_branch()
 {
 	typeset repo=${1:?repo}
@@ -63,15 +74,16 @@ update_bloody()
 		git checkout closed/README.ON-BINARIES.i386
 		git pull upstream $branch
 
-		for branch in upstream_gate upstream_joyent; do
-			banner "Updating $branch branch"
-			git checkout $branch
-			git pull $branch master
-			git push -u origin $branch
+		for _branch in upstream_gate upstream_joyent; do
+			banner "Updating $_branch branch"
+			git checkout $_branch
+			git pull $_branch master
 		done
 
 		git checkout $branch
-		git push origin --all
+		if ask "Push updates to github/$gituser?"; then
+			git push origin --all
+		fi
 	)
 }
 
@@ -81,7 +93,9 @@ update_stable()
 		cd $omnios_clone
 		git checkout closed/README.ON-BINARIES.i386
 		git pull upstream $branch
-		git push -u origin $branch
+		if ask "Push updates to github/$gituser?"; then
+			git push -u origin $branch
+		fi
 	)
 }
 
@@ -141,7 +155,9 @@ update_build()
         (
                 cd $build_clone
 		git pull upstream $branch
-                git push --all
+		if ask "Push updates to github/$gituser?"; then
+			git push origin --all
+		fi
         )
 }
 
