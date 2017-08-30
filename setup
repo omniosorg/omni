@@ -106,9 +106,10 @@ EOM
 install_env()
 {
 	echo "--- Install omnios.env"
+	[ "$release" = "bloody" ] && relnum=151023 || relnum=${release:1}
 	sed "
 		s^__WORKINGTREE__^$wd^
-		s^__BUILDNUM__^${release:1}^
+		s^__BUILDNUM__^$relnum^
 	" < etc/template.env > $wd/omnios.env
 }
 
