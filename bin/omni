@@ -67,7 +67,7 @@ check_repo()
 	fi
 }
 
-update_bloody()
+update_illumos_bloody()
 {
 	(
 		cd $omnios_clone
@@ -87,7 +87,7 @@ update_bloody()
 	)
 }
 
-update_stable()
+update_illumos_stable()
 {
 	(
 		cd $omnios_clone
@@ -99,14 +99,14 @@ update_stable()
 	)
 }
 
-update_omnios()
+update_illumos()
 {
 	check_repo "$omnios_clone" $branch
 	banner "Updating illumos-omnios $release branch"
 	if [ "$release" = bloody ]; then
-		update_bloody
+		update_illumos_bloody
 	else
-		update_stable
+		update_illumos_stable
 	fi
 }
 
@@ -148,7 +148,7 @@ upstream_diff()
 	)
 }
 
-update_build()
+update_omnios()
 {
         check_repo "$build_clone" $branch
 	banner "Updating $release OmniOS build"
@@ -187,12 +187,14 @@ help()
 	cat << EOM
 omni <operation>
 
-    update_omnios    - update your local omnios illumos environment     (uo)
-    update_build     - update your local omnios build environment       (ub)
+    update_illumos   - update your local omnios illumos environment     (ui)
+    build_illumos    - build omnios-illumos                             (bi)
+
+    update_omnios    - update your local omnios build environment       (uo)
+    build_omnios     - build OmniOS                                     (bo)
+
     upstream_diff    - show changes omnios-illumos master and upstream  (ud)
                        (bloody only)
-    build_illumos    - build omnios-illumos                             (bi)
-    build_omnios     - build OmniOS                                     (bo)
 
 NB: Ops can be abbreviated to the term shown in brackets, e.g. 'omni uo'
 	
@@ -203,11 +205,11 @@ EOM
 
 for op in "$@"; do
     case $op in
-	uo|update_omnios)		update_omnios ;;
-	ub|update_build)		update_build ;;
-	ud|upstream_diff)		upstream_diff ;;
+	ui|update_illumos)		update_illumos ;;
 	bi|build_illumos)		build_illumos ;;
+	uo|update_omnios)		update_omnios ;;
 	bo|build_omnios)		build_omnios ;;
+	ud|upstream_diff)		upstream_diff ;;
 	*) 				help ;;
     esac
 done
