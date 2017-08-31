@@ -81,6 +81,8 @@ update_illumos_bloody()
 		done
 
 		git checkout $branch
+
+		echo
 		if ask "Push updates to github/$gituser?"; then
 			git push origin --all
 		fi
@@ -93,6 +95,7 @@ update_illumos_stable()
 		cd $omnios_clone
 		git checkout closed/README.ON-BINARIES.i386
 		git pull upstream $branch
+		echo
 		if ask "Push updates to github/$gituser?"; then
 			git push -u origin $branch
 		fi
@@ -155,6 +158,7 @@ update_omnios()
         (
                 cd $build_clone
 		git pull upstream $branch
+		echo
 		if ask "Push updates to github/$gituser?"; then
 			git push origin --all
 		fi
