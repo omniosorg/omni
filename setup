@@ -124,7 +124,10 @@ if [ \`id -u\` = '0' ]; then
 	ROOT_OK=1
 	export FORCE_UNSAFE_CONFIGURE=1
 fi
+TMPDIR=$wd/tmp
+DTMPDIR=\$TMPDIR
 EOM
+
 }
 
 echo "This system is running OmniOS $release"
