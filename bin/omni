@@ -3,8 +3,8 @@
 CFGFILE=$HOME/.omni
 . $CFGFILE
 
-omnios_clone="$wd/illumos-omnios"
-build_clone="$wd/omnios-build"
+: ${illumos_clone:="$wd/illumos-omnios"}
+: ${omnios_clone:="$wd/omnios-build"}
 
 banner()
 {
@@ -43,7 +43,7 @@ repo_branch()
 joyent_commit()
 {
 	(
-		cd $omnios_clone
+		cd $illumos_clone
 		git show master:README.OmniOS | \
 		    grep 'Last illumos-joyent' | \
 		    awk '{print $4}'
@@ -73,7 +73,7 @@ check_repo()
 update_illumos_bloody()
 {
 	(
-		cd $omnios_clone
+		cd $illumos_clone
 		git checkout closed/README.ON-BINARIES.i386
 		git pull upstream $branch
 
@@ -95,7 +95,7 @@ update_illumos_bloody()
 update_illumos_stable()
 {
 	(
-		cd $omnios_clone
+		cd $illumos_clone
 		git checkout closed/README.ON-BINARIES.i386
 		git pull upstream $branch
 		echo
@@ -107,7 +107,7 @@ update_illumos_stable()
 
 update_illumos()
 {
-	check_repo "$omnios_clone" $branch
+	check_repo "$illumos_clone" $branch
 	banner "Updating illumos-omnios $release branch"
 	if [ "$release" = bloody ]; then
 		update_illumos_bloody
@@ -122,9 +122,9 @@ upstream_diff()
 		echo "Command not available for $release release"
 		return
 	fi
-	check_repo "$omnios_clone" $branch
+	check_repo "$illumos_clone" $branch
 	(
-		cd $omnios_clone
+		cd $illumos_clone
 
 		echo "GATE:"
 		echo
@@ -156,10 +156,10 @@ upstream_diff()
 
 update_omnios()
 {
-        check_repo "$build_clone" $branch
+        check_repo "$omnios_clone" $branch
 	banner "Updating $release OmniOS build"
         (
-                cd $build_clone
+                cd $omnios_clone
 		git pull upstream $branch
 		echo
 		if ask "Push updates to github/$gituser?"; then
@@ -173,10 +173,10 @@ build_illumos()
 	banner "Starting illumos-omnios $release build..."
 	/opt/onbld/bin/nightly $wd/omnios.env &
 	nightlypid=$!
-	while [ ! -f $omnios_clone/log/nightly.log ]; do
+	while [ ! -f $illumos_clone/log/nightly.log ]; do
 		sleep 1
 	done
-	tail -f $omnios_clone/log/nightly.log &
+	tail -f $illumos_clone/log/nightly.log &
 	tailpid=$!
 	wait $nightlypid
 	kill $tailpid
@@ -184,7 +184,7 @@ build_illumos()
 
 build_omnios()
 {
-	cd $build_clone/build
+	cd $omnios_clone/build
 	[ -z "$USER" ] && USER=LOGNAME
 	./buildctl build continue
 }
