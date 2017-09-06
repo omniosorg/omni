@@ -6,6 +6,7 @@
 
 ips=https://pkg.omniosce.org
 github=https://github.com
+role=1
 
 export LC_ALL=C
 
@@ -29,6 +30,34 @@ ask()
 		read a
 	done
 	[[ "$a" = [yY] ]]
+}
+
+determine_role()
+{
+	role=1
+	cat << EOM
+
+-- If you intend to contribute to OmniOS development, then additional
+-- commands can be enabled to assist with the process.
+
+EOM
+
+	ask "--- Enable these additional commands" && role=2
+	echo
+
+	if [ "$role" -eq 2 ]; then
+		cat << EOM
+
+-- Additionally, if you have write access to the omniosorg organisation at
+-- Github, then the remote upstream branches can be automatically kept
+-- up-to-date. This access is NOT necessary in order to develop since
+-- all integrations are via pull requests.
+
+EOM
+		ask "--- Do you have commit access to github/omniosorg?" \
+		    && role=3
+		echo
+	fi
 }
 
 install_pkg()
@@ -100,6 +129,8 @@ gituser=$gituser
 release=$release
 branch=$branch
 wd=$wd
+# 1 user, 2 developer, 3 guardian (commit access)
+role=$role
 EOM
 }
 
@@ -140,7 +171,17 @@ if [ "$1" = "-ssh" ]; then
 	github=git@github.com:
 	echo "Using SSH for github access"
 	shift
-else
+fi
+
+wd="$1"
+gituser="$2"
+
+if [ -z "$wd" -o -z "$gituser" ]; then
+	echo "Syntax: setup [-ssh] <working directory> <git username>"
+	exit 1
+fi
+
+if [[ "$github" != git@* ]]; then
 	cat << EOM
 
 -- By default, HTTPS will be used to access Github.
@@ -150,13 +191,7 @@ EOM
 	if ask "Do you want to use SSH instead?"; then
 		github=git@github.com:
 	fi
-fi
-wd="$1"
-gituser="$2"
-
-if [ -z "$wd" -o -z "$gituser" ]; then
-	echo "Syntax: setup [-ssh] <working directory> <git username>"
-	exit 1
+	echo
 fi
 
 if [ -d "$wd" ]; then
@@ -173,6 +208,7 @@ else
 	echo "--- Using $wd for installation."
 fi
 
+determine_role
 check_publisher
 check_pkg developer/illumos-tools
 check_pkg developer/omnios-build-tools
