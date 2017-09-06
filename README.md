@@ -3,8 +3,7 @@
 # Building OmniOSce
 
 This package contains scripts to help set up and build a copy of
-OmniOSce on your own server or within a non-global zone with some small
-limitations.
+OmniOSce on your own server or within a non-global zone.
 
 Each version of OmniOS can only be built on the same version so if you want
 to build bloody, you need a machine running up-to-date bloody and the same
@@ -17,8 +16,8 @@ github account must be provided as an argument to the setup script.
 
 ### Quick start (building in global zone)
 
-It can be useful to create a dedicated ZFS filesystem for the build
-area but this step is optional.
+> It can be useful to create a dedicated ZFS filesystem for the build
+> area but this step is optional.
 
 ```
 # zfs create -o mountpoint=/build rpool/build
@@ -39,11 +38,9 @@ area but this step is optional.
 
 ### Example build zone setup
 
-Building within a zone has a couple of limitations but generally works
-well. The limitations are:
-
-* It is not possible to build the `kayak-kernel` component (it will be skipped);
-* It is not possible to build release media.
+Building within a zone also works well with a couple of additional privileges
+over the default set as shown in the example below. It is however not
+possible to generate release media from within a zone.
 
 To create a zone suitable for building:
 
@@ -88,5 +85,6 @@ Sanity Check: Looking for 'entire' incorporation.
 
 ```
 
-The process for building is the same as in the global zone.
+The process for then building illumos-omnios and OmniOS itself is then the
+same as in the global zone.
 
