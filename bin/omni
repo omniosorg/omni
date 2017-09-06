@@ -272,7 +272,7 @@ for op in "$@"; do
 	uo|update_omnios)		update_omnios ;;
 	bo|build_omnios)		build_omnios ;;
 	ud|upstream_diff)		is dev && upstream_diff || help;;
-	*) 				help ;;
+	*) 				"$@" || help ;;
     esac
 done
 
