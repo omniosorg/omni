@@ -116,6 +116,11 @@ update_illumos()
 	fi
 }
 
+diff_colour()
+{
+	gegrep --colour '^|^ [^ ].*'
+}
+
 upstream_diff()
 {
 	if [ "$release" != bloody ]; then
@@ -128,27 +133,53 @@ upstream_diff()
 
 		echo "GATE:"
 		echo
-		git log --reverse --no-merges master..upstream_gate | sed -n '
-			/^commit / {
-				s/commit //
-				p
+		git log --reverse --no-merges --abbrev-commit \
+		    master..upstream_gate \
+		    | nawk '
+			function op() {
+				if (commit)
+					printf("%-69s %s\n", issue, commit)
+				commit = 0
 			}
-			/    [0-9]\{4\} /p
-		' | paste -d\  - -
+			/^commit / 	{ op(); commit = $2 }
+			/^    [0-9][0-9][0-9][0-9] / {
+				gsub(/  +/, " ")
+				issue = substr($0, 0, 69)
+			}
+			END { op() }
+		    ' | diff_colour
 
 		echo
 		echo "JOYENT:"
 		echo
 
 		git checkout -q upstream_joyent
-		git log --reverse --no-merges `joyent_commit`.. | sed -n '
-			/^commit /h
-			/    OS-/ {
-				H
-				x
-				p
+		git whatchanged --reverse --no-merges --abbrev-commit \
+		    `joyent_commit`.. \
+		    | nawk '
+			function op() {
+				if (matched)
+				{
+					printf("%-69s %s\n", issue, commit)
+					for (i in files)
+						print "         ", files[i]
+					print ""
+					matched = 0
+				}
+				# Clear array
+				split("", files)
 			}
-		' | paste -d\  - -
+			/^commit / 	{ op(); commit = $2 }
+			/OS-[0-9]/ {
+				gsub(/  +/, " ")
+				issue = substr($0, 0, 69)
+			}
+			/^:/ {
+				files[NR] = sprintf("%s %s", $5, $6)
+			}
+			/brand\/lx/ 	{ matched = 1 }
+			END { op() }
+		    ' | diff_colour
 		git checkout -q $branch
 		echo
 	)
