@@ -13,11 +13,14 @@ banner()
 	echo
 }
 
+answer=
+
 ask()
 {
-	typeset a=
+	typeset a=$answer
 
 	echo "$* (y/n) \\c"
+	[ -n "$a" ] && echo $a
 	while [[ "$a" != [yYnN] ]]; do
 		read a
 	done
@@ -189,7 +192,12 @@ build_omnios()
 help()
 {
 	cat << EOM
-omni <operation>
+omni [-n|-y] <operation>
+
+    -n               - assume no to all questions.
+    -y               - assume yes to all questions.
+
+Operations:
 
     update_illumos   - update your local omnios illumos environment     (ui)
     build_illumos    - build omnios-illumos                             (bi)
@@ -204,6 +212,9 @@ NB: Ops can be abbreviated to the term shown in brackets, e.g. 'omni uo'
 	
 EOM
 }
+
+[ "$1" = "-y" ] && answer=y && shift
+[ "$1" = "-n" ] && answer=n && shift
 
 [ -z "$@" ] && help
 
