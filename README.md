@@ -85,6 +85,6 @@ Sanity Check: Looking for 'entire' incorporation.
 
 ```
 
-The process for then building illumos-omnios and OmniOS itself is then the
+The process for then building illumos-omnios and OmniOS itself is the
 same as in the global zone.
 
