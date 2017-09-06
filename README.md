@@ -17,7 +17,7 @@ github account must be provided as an argument to the setup script.
 ### Quick start (building in global zone)
 
 > It can be useful to create a dedicated ZFS filesystem for the build
-> area but this step is optional.
+> area (as shown below) but this step is optional.
 
 ```
 # zfs create -o mountpoint=/build rpool/build
