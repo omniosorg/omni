@@ -120,7 +120,10 @@ install_site()
 PREBUILT_ILLUMOS=$wd/illumos-omnios
 PKGSRVR=file://$wd/repo
 SKIP_KAYAK_KERNEL=1
-ROOT_OK=1
+if [ \`id -u\` = '0' ]; then
+	ROOT_OK=1
+	export FORCE_UNSAFE_CONFIGURE=1
+fi
 EOM
 }
 
