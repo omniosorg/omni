@@ -339,6 +339,7 @@ EOM
 			sed -i "/$hash/d" $lxdata_clone/ij-TODO-commits
 			if [ $cherry -eq 1 ]; then
 				git cherry-pick $hash
+echo "RETURN CODE: $?"
 				echo
 				banner "-- Check messages above for"\
 				    " successful merge."
@@ -428,8 +429,8 @@ EOM
 
 	is dev && cat << EOM
 
-    upstream_diff    - show changes omnios-illumos master and upstream  (ud)
-                       (bloody only)
+    upstream_diff    - show changes between omnios-illumos master and   (ud)
+                       upstream (bloody only)
     merge_gate       - merge changes from upstream illumos-gate to new  (mg)
                        branch.
     lx_begin         - begin the upstream lx zone merge process.        (lb)
