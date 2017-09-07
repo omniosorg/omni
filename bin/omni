@@ -285,7 +285,7 @@ EOM
 
 	is guardian && cat << EOM
 
-    push_upstreams   - Push upstream branches to github/omniosorg
+    push_upstreams   - Push upstream branches to github/omniosorg       (pu)
 
 EOM
 
