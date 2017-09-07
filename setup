@@ -71,8 +71,10 @@ check_pkg()
 
 	echo "--- checking that $pkg is installed"
 	if ! pkg list -q "$pkg"; then
+		echo
 		echo "The $pkg package is not installed on this system."
 		if ask "Install?"; then
+			echo
 			install_pkg "$pkg"
 		else
 			echo "Aborting setup."
@@ -88,8 +90,10 @@ check_publisher()
 
 	echo "--- checking that extra.omnios publisher is set"
 	if ! pkg publisher -H | egrep -s '^extra.omnios '; then
+		echo
 		echo "The extra.omnios publisher is not present."
 		if ask "Add it?"; then
+			echo
 			sudo pkg set-publisher \
 			    -g $ips/$release/extra extra.omnios || exit 1
 
