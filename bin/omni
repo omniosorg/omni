@@ -230,6 +230,33 @@ build_omnios()
 	./buildctl build continue
 }
 
+push_upstreams()
+{
+	ask "Push upstream branches to github/omniosorg?" || exit 0
+	check_repo "$illumos_clone" $branch
+	(
+		cd $illumos_clone
+
+		for _branch in upstream_gate upstream_joyent; do
+			banner "Pushing $_branch branch to github/omniosorg"
+			git push -u upstream $_branch
+		done
+	)
+}
+
+merge_gate()
+{
+	ask "Merge changes from upstream illumos-gate?" || exit 0
+	check_repo "$illumos_clone" $branch
+	(
+		_branch=upstream_merge/`date +%Y%m%d`01
+		cd $illumos_clone
+		git checkout -b $_branch || exit 1
+		check_repo "$illumos_clone" $_branch
+		git merge upstream_gate
+	) || exit 1
+}
+
 help()
 {
 	cat << EOM
@@ -251,6 +278,14 @@ EOM
 
     upstream_diff    - show changes omnios-illumos master and upstream  (ud)
                        (bloody only)
+    merge_gate       - merge changes from upstream illumos-gate to new  (mg)
+                       branch.
+
+EOM
+
+	is guardian && cat << EOM
+
+    push_upstreams   - Push upstream branches to github/omniosorg
 
 EOM
 
@@ -271,7 +306,9 @@ for op in "$@"; do
 	bi|build_illumos)		build_illumos ;;
 	uo|update_omnios)		update_omnios ;;
 	bo|build_omnios)		build_omnios ;;
-	ud|upstream_diff)		is dev && upstream_diff || help;;
+	ud|upstream_diff)		is dev && upstream_diff || help ;;
+	mg|merge_gate)			is dev && merge_gate || help ;;
+	pu|push_upstreams)		is guardian && push_upstreams || help ;;
 	*) 				"$@" || help ;;
     esac
 done
