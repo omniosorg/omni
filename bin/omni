@@ -5,6 +5,7 @@ CFGFILE=$HOME/.omni
 
 : ${illumos_clone:="$wd/illumos-omnios"}
 : ${omnios_clone:="$wd/omnios-build"}
+: ${lxdata_clone:="$wd/lx-port-data"}
 : ${role:=1}
 
 banner()
@@ -12,6 +13,12 @@ banner()
 	echo
 	echo "*** $*"
 	echo
+}
+
+abort()
+{
+	banner "$@"
+	exit 1
 }
 
 is()
@@ -35,6 +42,11 @@ ask()
 		read a
 	done
 	[[ "$a" = [yY] ]]
+}
+
+reset_branch()
+{
+	git checkout closed/README.ON-BINARIES.i386
 }
 
 repo_branch()
@@ -84,7 +96,7 @@ update_illumos_bloody()
 {
 	(
 		cd $illumos_clone
-		git checkout closed/README.ON-BINARIES.i386
+		reset_branch
 		git pull upstream $branch
 
 		for _branch in upstream_gate upstream_joyent; do
@@ -230,6 +242,159 @@ build_omnios()
 	./buildctl build continue
 }
 
+merge_gate()
+{
+	ask "Merge changes from upstream illumos-gate?" || exit 0
+	check_repo "$illumos_clone" $branch
+	(
+		_branch=upstream_merge/`date +%Y%m%d`01
+		cd $illumos_clone
+		git checkout -b $_branch || exit 1
+		check_repo "$illumos_clone" $_branch
+		git merge upstream_gate
+	) || exit 1
+}
+
+lx_begin()
+{
+	check_repo "$lxdata_clone" $branch
+	(
+		cd $lxdata_clone
+		git pull
+
+		if [ -f ij-ALL-commits ]; then
+			abort "An LX merge session is in progress, aborting."
+		fi
+
+		check_repo "$illumos_clone" $branch
+		cd $illumos_clone
+		reset_branch
+		git checkout upstream_joyent || exit 1
+
+		echo "--- Building list of new commits"
+
+		git log --reverse --no-merges --format=%H `joyent_commit`.. \
+		    > $lxdata_clone/ij-ALL-commits
+
+		echo "    Found  `wc -l < $lxdata_clone/ij-ALL-commits`"\
+		    "commit(s)"
+
+		echo "--- Filtering out gate commits"
+
+		git log master --format=%H > $lxdata_clone/ij-GATE-commits
+		fgrep -v -f $lxdata_clone/ij-GATE-commits \
+		    $lxdata_clone/ij-ALL-commits \
+		    > $lxdata_clone/ij-TODO-commits
+
+		num=`wc -l < $lxdata_clone/ij-TODO-commits`
+
+		if [ $num -eq 0 ]; then
+			echo "-- No commits to evaluate."
+			rm -f $lxdata_clone/ij-*
+			git checkout master
+		else
+			echo "    Leaves $num commit(s)"
+			_branch=joyent_merge/`date +%Y%m%d`01
+			git checkout -b $_branch master || exit 1
+			check_repo "$illumos_clone" $_branch
+		fi
+	) || exit 1
+}
+
+lx_pick()
+{
+	_branch=`repo_branch $illumos_clone`
+	[[ $_branch = joyent_merge/* ]] || \
+	    abort "On wrong branch, $_branch (have you run lx_begin?)"
+	[ -f $lxdata_clone/ij-TODO-commits ] || \
+	    abort "No LX merge session in progress"
+
+	(
+		cd $illumos_clone
+
+		while :; do
+			num=`wc -l < $lxdata_clone/ij-TODO-commits`
+			if [ $num -lt 1 ]; then
+				cat << EOM
+
+--- No commits remaining. Run 'lx_end' to finish.
+
+EOM
+				exit 1
+			fi
+			banner "$num commit(s) remaining"
+			hash=`head -1 $lxdata_clone/ij-TODO-commits`
+			git show --stat $hash
+
+			echo
+
+			if ask "Cherry pick this commit?"; then
+				echo $hash >> $lxdata_clone/ij-picked-commits
+				cherry=1
+			else
+				echo $hash >> $lxdata_clone/ij-skipped-commits
+				cherry=0
+			fi
+			echo $hash >> $lxdata_clone/ij-decided-commits
+			sed -i "/$hash/d" $lxdata_clone/ij-TODO-commits
+			if [ $cherry -eq 1 ]; then
+				git cherry-pick $hash
+				echo
+				banner "-- Check messages above for"\
+				    " successful merge."
+				exit 1
+			fi
+		done
+	) || exit 1
+}
+
+lx_end()
+{
+	_branch=`repo_branch $illumos_clone`
+	[[ $_branch = joyent_merge/* ]] || \
+	    abort "On wrong branch, $_branch (have you run lx_begin?)"
+	[ -f $lxdata_clone/ij-TODO-commits ] || \
+	    abort "No LX merge session in progress"
+	[ -s $lxdata_clone/ij-TODO-commits ] && \
+	    abort "Not all commits have been evaluated,"\
+	    "run 'lx_pick' until none remain."
+
+	lasthash=`tail -1 $lxdata_clone/ij-decided-commits`
+
+	(
+		banner "Archiving port data"
+
+		cd $lxdata_clone
+		arc=`date +%Y/%b%d`
+		[ -d $arc ] && abort "Archive directory $arc alread exists."
+		mkdir -p $arc
+		rm -f ij-TODO-commits	# Now empty
+		rm -f ij-GATE-commits
+		mv ij-* $arc
+
+		git add $arc
+		git commit -m "LX Port data for $_branch" $arc
+
+		is guardian \
+		    && ask "Push lx-port-data back to github/omniosorg?" \
+		    && git push
+
+		cd $illumos_clone
+
+		banner "Updating README.OmniOS ($lasthash)"
+
+		sed -i "/^Last illumos-joyent/s/: .*/: $lasthash/" \
+		    README.OmniOS
+		git commit -m 'Update README.OmniOS with last Joyent commit' \
+		    README.OmniOS
+
+		banner "The following commits have been picked."
+		git log --reverse master..$_branch
+		echo
+	)
+
+}
+
 push_upstreams()
 {
 	ask "Push upstream branches to github/omniosorg?" || exit 0
@@ -242,19 +407,6 @@ push_upstreams()
 			git push -u upstream $_branch
 		done
 	)
-}
-
-merge_gate()
-{
-	ask "Merge changes from upstream illumos-gate?" || exit 0
-	check_repo "$illumos_clone" $branch
-	(
-		_branch=upstream_merge/`date +%Y%m%d`01
-		cd $illumos_clone
-		git checkout -b $_branch || exit 1
-		check_repo "$illumos_clone" $_branch
-		git merge upstream_gate
-	) || exit 1
 }
 
 help()
@@ -280,6 +432,9 @@ EOM
                        (bloody only)
     merge_gate       - merge changes from upstream illumos-gate to new  (mg)
                        branch.
+    lx_begin         - begin the upstream lx zone merge process.        (lb)
+    lx_pick          - evaluate the next lx commit.                     (lp)
+    lx_end           - finish the lx zone merge process.                (le)
 
 EOM
 
@@ -308,6 +463,9 @@ for op in "$@"; do
 	bo|build_omnios)		build_omnios ;;
 	ud|upstream_diff)		is dev && upstream_diff || help ;;
 	mg|merge_gate)			is dev && merge_gate || help ;;
+	lb|lx_begin)			is dev && lx_begin || help ;;
+	lp|lx_pick)			is dev && lx_pick || help ;;
+	le|lx_end)			is dev && lx_end || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
 	*) 				"$@" || help ;;
     esac
