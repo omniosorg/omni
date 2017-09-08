@@ -65,6 +65,12 @@ ask()
 	[[ "$a" = [yY] ]]
 }
 
+anything_to_push()
+{
+	git for-each-ref --format="%(refname:short) %(push:track)" refs/heads \
+	    | egrep -s '\[ahead '
+}
+
 reset_branch()
 {
 	git checkout closed/README.ON-BINARIES.i386
@@ -129,9 +135,9 @@ update_illumos_bloody()
 		git checkout $branch
 
 		echo
-		if ask "Push updates to github/$gituser?"; then
-			git push origin --all
-		fi
+		# Check to see if there are any updates to push back
+		anything_to_push && ask "Push updates to github/$gituser?" \
+		    && git push origin --all
 	)
 }
 
@@ -142,9 +148,8 @@ update_illumos_stable()
 		git checkout closed/README.ON-BINARIES.i386
 		git pull upstream $branch
 		echo
-		if ask "Push updates to github/$gituser?"; then
-			git push -u origin $branch
-		fi
+		anything_to_push && ask "Push updates to github/$gituser?" \
+		    && git push -u origin $branch
 	)
 }
 
@@ -221,6 +226,7 @@ upstream_diff()
 				files[NR] = sprintf("%s %s", $5, $6)
 			}
 			/(brand|fs)\/lx/ { matched = 1 }
+			/\/lx_/		 { matched = 1 }
 			END { op() }
 		    ' | diff_colour
 		git checkout -q $branch
@@ -236,9 +242,8 @@ update_omnios()
                 cd $omnios_clone
 		git pull upstream $branch
 		echo
-		if ask "Push updates to github/$gituser?"; then
-			git push origin --all
-		fi
+		anything_to_push && ask "Push updates to github/$gituser?" \
+		    && git push origin --all
         )
 }
 
@@ -359,12 +364,10 @@ EOM
 			echo $hash >> $lxdata_clone/ij-decided-commits
 			sed -i "/$hash/d" $lxdata_clone/ij-TODO-commits
 			if [ $cherry -eq 1 ]; then
-				git cherry-pick $hash
-echo "RETURN CODE: $?"
-				echo
-				banner "-- Check messages above for"\
-				    " successful merge."
-				exit 1
+				if ! git cherry-pick $hash; then
+					banner "Problem during cherry-pick."
+					exit 1
+				fi
 			fi
 		done
 	) || exit 1
@@ -419,10 +422,16 @@ lx_end()
 
 push_upstreams()
 {
-	ask "Push upstream branches to github/omniosorg?" || exit 0
 	check_repo "$illumos_clone" $branch
 	(
 		cd $illumos_clone
+
+		if ! anything_to_push; then
+			echo "-- Nothing to push."
+			return
+		fi
+
+		ask "Push upstream branches to github/omniosorg?" || exit 0
 
 		for _branch in upstream_gate upstream_joyent; do
 			banner "Pushing $_branch branch to github/omniosorg"
