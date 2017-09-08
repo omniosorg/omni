@@ -71,32 +71,23 @@ anything_to_push()
 	    | egrep -s '\[ahead '
 }
 
-reset_branch()
-{
-	git checkout closed/README.ON-BINARIES.i386
-}
 
 repo_branch()
 {
 	typeset repo=${1:?repo}
-	(
-		cd $repo
-		git status --short --branch -uno . | sed '
-			s/\..*//
-			s/.* //
-			q
-		    '
-	)
+	git -C "$repo" symbolic-ref --short HEAD
+}
+
+reset_illumos_branch()
+{
+	git checkout closed/README.ON-BINARIES.i386
 }
 
 joyent_commit()
 {
-	(
-		cd $illumos_clone
-		git show master:README.OmniOS | \
-		    grep 'Last illumos-joyent' | \
-		    awk '{print $4}'
-	)
+	git -C "$illumos_clone" show master:README.OmniOS | \
+	    grep 'Last illumos-joyent' | \
+	    awk '{print $4}'
 }
 
 check_repo()
@@ -123,7 +114,7 @@ update_illumos_bloody()
 {
 	(
 		cd $illumos_clone
-		reset_branch
+		reset_illumos_branch
 		git pull upstream $branch
 
 		for _branch in upstream_gate upstream_joyent; do
@@ -197,13 +188,13 @@ upstream_diff()
 			END { op() }
 		    ' | diff_colour
 
+		hash=`joyent_commit`
 		echo
-		echo "JOYENT:"
+		echo "JOYENT ($hash..):"
 		echo
 
 		git checkout -q upstream_joyent
-		git whatchanged --reverse --no-merges --abbrev-commit \
-		    `joyent_commit`.. \
+		git whatchanged --reverse --no-merges --abbrev-commit $hash.. \
 		    | nawk '
 			function op() {
 				if (matched)
@@ -294,7 +285,7 @@ lx_begin()
 
 		check_repo "$illumos_clone" $branch
 		cd $illumos_clone
-		reset_branch
+		reset_illumos_branch
 		git checkout upstream_joyent || exit 1
 
 		echo "--- Building list of new commits"
