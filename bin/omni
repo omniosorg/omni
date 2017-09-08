@@ -140,7 +140,7 @@ update_illumos_stable()
 		git pull upstream $branch
 		echo
 		anything_to_push && ask "Push updates to github/$gituser?" \
-		    && git push -u origin $branch
+		    && git push origin $branch
 	)
 }
 
@@ -414,19 +414,13 @@ lx_end()
 push_upstreams()
 {
 	check_repo "$illumos_clone" $branch
+	ask "Push upstream branches to github/omniosorg?" || exit 0
 	(
 		cd $illumos_clone
 
-		if ! anything_to_push; then
-			echo "-- Nothing to push."
-			return
-		fi
-
-		ask "Push upstream branches to github/omniosorg?" || exit 0
-
 		for _branch in upstream_gate upstream_joyent; do
 			banner "Pushing $_branch branch to github/omniosorg"
-			git push -u upstream $_branch
+			git push upstream $_branch
 		done
 	)
 }
