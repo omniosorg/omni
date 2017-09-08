@@ -23,6 +23,8 @@
 
 # Setup utility for creating an OmniOS build environment.
 
+mydir=`dirname $_`
+
 ips=https://pkg.omniosce.org
 github=https://github.com
 role=1
@@ -166,7 +168,7 @@ install_env()
 	sed "
 		s^__WORKINGTREE__^$wd^
 		s^__BUILDNUM__^$relnum^
-	" < etc/template.env > $wd/omnios.env
+	" < $mydir/etc/template.env > $wd/omnios.env
 }
 
 install_site()
@@ -250,7 +252,16 @@ install_env
 install_site
 
 echo
-if ask "Create symlink as /usr/bin/omni?"; then
+
+if [[ $mydir = */ooce/* ]]; then
+	cat << EOM
+
+Setup is complete.
+Invoke the utility by typing '/opt/ooce/bin/omni'
+or add /opt/ooce/bin to your \$PATH
+
+EOM
+elif ask "Create symlink as /usr/bin/omni?"; then
 	[ -h /usr/bin/omni ] && rm -f /usr/bin/omni
 	ln -s `pwd`/bin/omni /usr/bin/omni
 	echo
