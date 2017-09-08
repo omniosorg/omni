@@ -26,7 +26,7 @@ github account must be provided as an argument to the setup script.
 # su - <builduser>
 
 % pkg install git
-% git clone https://github.com/citrus-it/omni.git
+% git clone https://github.com/omniosorg/omni.git
 % cd omni
 % ./setup /build <github username>
 
