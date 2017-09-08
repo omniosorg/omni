@@ -128,7 +128,7 @@ check_publisher()
 gitclone()
 {
 	typeset repo=$1
-	typeset user=$gituser
+	typeset user=${2:-$gituser}
 
 	echo "--- Cloning $repo from ${github}/$user"
 	git clone -b $branch ${github}/$user/$repo.git $wd/$repo
@@ -243,7 +243,7 @@ check_pkg ooce/runtime/python-36
 
 gitclone illumos-omnios
 gitclone omnios-build
-gitclone lx-port-data omniosorg
+[ $role -gt 1 ] && gitclone lx-port-data omniosorg
 
 install_config
 install_env
