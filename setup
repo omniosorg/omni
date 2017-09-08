@@ -128,7 +128,7 @@ check_publisher()
 gitclone()
 {
 	typeset repo=$1
-	typset user=$gituser
+	typeset user=$gituser
 
 	echo "--- Cloning $repo from ${github}/$user"
 	git clone -b $branch ${github}/$user/$repo.git $wd/$repo
