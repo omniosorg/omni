@@ -216,6 +216,7 @@ upstream_diff()
 			/^:/ {
 				files[NR] = sprintf("%s %s", $5, $6)
 			}
+			/ lx / { matched = 1 }
 			/(brand|fs)\/lx/ { matched = 1 }
 			/\/lx_/		 { matched = 1 }
 			END { op() }
