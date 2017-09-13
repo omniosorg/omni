@@ -261,7 +261,7 @@ Invoke the utility by typing '/opt/ooce/bin/omni'
 or add /opt/ooce/bin to your \$PATH
 
 EOM
-elif ask "Create symlink as /usr/bin/omni?"; then
+elif [ "`uid -u`" = 0 ] && ask "Create symlink as /usr/bin/omni?"; then
 	[ -h /usr/bin/omni ] && rm -f /usr/bin/omni
 	ln -s `pwd`/bin/omni /usr/bin/omni
 	echo
