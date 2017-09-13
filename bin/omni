@@ -136,7 +136,7 @@ update_illumos_stable()
 {
 	(
 		cd $illumos_clone
-		git checkout closed/README.ON-BINARIES.i386
+		reset_illumos_branch
 		git pull upstream $branch
 		echo
 		anything_to_push && ask "Push updates to github/$gituser?" \
@@ -193,6 +193,7 @@ upstream_diff()
 		echo "JOYENT ($hash..):"
 		echo
 
+		reset_illumos_branch
 		git checkout -q upstream_joyent
 		git whatchanged --reverse --no-merges --abbrev-commit $hash.. \
 		    | nawk '
