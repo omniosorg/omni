@@ -23,7 +23,8 @@
 
 if [ "$1" = "setup" ]; then
 	shift
-	`dirname $0`/../setup "$@"
+	script=`readlink $0`
+	`dirname $script`/../setup "$@"
 	exit 0
 fi
 
