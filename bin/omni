@@ -141,8 +141,7 @@ update_illumos_bloody()
 	(
 		cd $illumos_clone
 		reset_illumos_branch
-		git pull upstream $branch
-		git pull upstream --tags
+		git pull upstream $branch --no-edit
 
 		for _branch in upstream_gate upstream_joyent; do
 			banner "Updating $_branch branch"
@@ -172,8 +171,7 @@ update_illumos_stable()
 	(
 		cd $illumos_clone
 		reset_illumos_branch
-		git pull upstream $branch
-		git pull upstream --tags
+		git pull upstream $branch --no-edit
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
@@ -272,8 +270,7 @@ update_omnios()
 	banner "Updating $release OmniOS build"
         (
                 cd $omnios_clone
-		git pull upstream $branch
-		git pull upstream --tags
+		git pull upstream $branch --no-edit
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
