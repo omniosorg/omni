@@ -48,6 +48,9 @@ fi
 : ${illumos_clone:="$wd/illumos-omnios"}
 : ${omnios_clone:="$wd/omnios-build"}
 : ${lxdata_clone:="$wd/lx-port-data"}
+: ${omnios_buildtmp:="$wd/tmp"}
+: ${omnios_buildrepo:="$wd/repo"}
+: ${illumos_env:="$wd/omnios.env"}
 : ${role:=1}
 
 banner()
@@ -137,6 +140,7 @@ update_illumos_bloody()
 		cd $illumos_clone
 		reset_illumos_branch
 		git pull upstream $branch
+		git pull upstream --tags
 
 		for _branch in upstream_gate upstream_joyent; do
 			banner "Updating $_branch branch"
@@ -148,8 +152,16 @@ update_illumos_bloody()
 
 		echo
 		# Check to see if there are any updates to push back
-		anything_to_push && ask "Push updates to github/$gituser?" \
-		    && git push origin --all
+		if anything_to_push && ask "Push updates to github/$gituser?"
+		then
+			#git push origin --all
+			for _branch in $branch upstream_gate upstream_joyent
+			do
+				banner "Pushing $_branch branch"
+				git push origin $_branch
+			done
+			git push origin --tags
+		fi
 	)
 }
 
@@ -159,9 +171,13 @@ update_illumos_stable()
 		cd $illumos_clone
 		reset_illumos_branch
 		git pull upstream $branch
+		git pull upstream --tags
 		echo
-		anything_to_push && ask "Push updates to github/$gituser?" \
-		    && git push origin $branch
+		if anything_to_push && ask "Push updates to github/$gituser?"
+		then
+			git push origin $branch
+			git push origin --tags
+		fi
 	)
 }
 
@@ -255,16 +271,20 @@ update_omnios()
         (
                 cd $omnios_clone
 		git pull upstream $branch
+		git pull upstream --tags
 		echo
-		anything_to_push && ask "Push updates to github/$gituser?" \
-		    && git push origin --all
+		if anything_to_push && ask "Push updates to github/$gituser?"
+		then
+			git push origin $branch
+			git push origin --tags
+		fi
         )
 }
 
 build_illumos()
 {
 	banner "Starting illumos-omnios $release build..."
-	/opt/onbld/bin/nightly $wd/omnios.env &
+	/opt/onbld/bin/nightly $illumos_env &
 	nightlypid=$!
 	while [ ! -f $illumos_clone/log/nightly.log ]; do
 		sleep 1
