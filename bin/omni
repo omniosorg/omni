@@ -23,7 +23,7 @@
 
 if [ "$1" = "setup" ]; then
 	shift
-	$0/../setup "$@"
+	`dirname $0`/../setup "$@"
 	exit 0
 fi
 
