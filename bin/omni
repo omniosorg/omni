@@ -21,6 +21,12 @@
 #
 # Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 
+if [ "$1" = "setup" ]; then
+	shift
+	$0/../setup "$@"
+	exit 0
+fi
+
 CFGFILE=$HOME/.omni
 
 if [ ! -f "$CFGFILE" ]; then
@@ -34,12 +40,6 @@ Where <build directory> points to an empty directory that will be used
 for building OmniOS.
 
 	EOM
-	exit 0
-fi
-
-if [ "$1" = "setup" ]; then
-	shift
-	$0/../setup "$@"
 	exit 0
 fi
 
