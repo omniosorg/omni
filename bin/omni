@@ -22,6 +22,27 @@
 # Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 
 CFGFILE=$HOME/.omni
+
+if [ ! -f "$CFGFILE" ]; then
+	cat <<- EOM
+
+omni has not yet been configured, please run:
+
+    $0 setup [-ssh] <build directory> <github username>
+
+Where <build directory> points to an empty directory that will be used
+for building OmniOS.
+
+	EOM
+	exit 0
+fi
+
+if [ "$1" = "setup" ]; then
+	shift
+	$0/../setup "$@"
+	exit 0
+fi
+
 . $CFGFILE
 
 : ${illumos_clone:="$wd/illumos-omnios"}
