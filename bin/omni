@@ -288,10 +288,14 @@ build_illumos()
 	while [ ! -f $illumos_clone/log/nightly.log ]; do
 		sleep 1
 	done
-	tail -f $illumos_clone/log/nightly.log &
+	(
+		tail -f $illumos_clone/log/nightly.log \
+		    | egrep '^(====|real|user|sys)'
+	) &
 	tailpid=$!
 	wait $nightlypid
 	kill $tailpid
+	#cat $illumos_clone/log/mail_msg
 }
 
 build_omnios()
