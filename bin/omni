@@ -54,6 +54,7 @@ fi
 : ${omnios_buildrepo:="$wd/repo"}
 : ${illumos_env:="$wd/omnios.env"}
 : ${role:=1}
+: ${answer:=}
 
 banner()
 {
@@ -76,8 +77,6 @@ is()
 	esac
 	return 1
 }
-
-answer=
 
 ask()
 {
