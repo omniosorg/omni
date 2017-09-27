@@ -567,7 +567,7 @@ for op in "$@"; do
 	lp|lx_pick)			is dev && lx_pick || help ;;
 	le|lx_end)			is dev && lx_end || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
-	*) 				"$@" || help ;;
+	*) 				help ;;
     esac
 done
 
