@@ -303,17 +303,17 @@ build_omnios()
 	./buildctl build continue
 }
 
-onu()
+onu_illumos()
 {
 	[ -d $illumos_clone/packages/i386/nightly-nd ] \
 	    || abort "No built illumos packages found."
 
 	be=`date +%Y%m%d01`
-	while beadm list -H -o name | egrep -s "^${be}-onu;"; do
+	while beadm list -H | egrep -s "^${be}-onu;"; do
 		((be = be + 1))
 	done
 	banner "ONU to new BE $be-onu"
-	$PFEXEC onu -t $be-onu \
+	$PFEXEC /opt/onbld/bin/onu -t $be-onu \
 	    -d $illumos_clone/packages/i386/nightly-nd
 }
 
