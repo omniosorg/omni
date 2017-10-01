@@ -333,7 +333,8 @@ cleanup()
 	echo "Removing build logs..."
 	find $omnios_clone -type f -name build.log\* -exec rm {} +
 	echo "Cleaning illumos-omnios..."
-	/opt/onbld/bin/bldenv $illumos_env 'cd usr/src && dmake clobber'
+	/opt/onbld/bin/bldenv $illumos_env \
+		"cd $illumos_clone/usr/src && dmake clobber"
 }
 
 merge_gate()
