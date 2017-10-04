@@ -314,7 +314,7 @@ view_mail_msg()
 		cd $illumos_clone/log
 		dir="`ls -1tr | fgrep 'log.' | tail -1`"
 		[ -f "$dir/mail_msg" ] || abort "Mail message not present."
-		LESS=-X less $dir/mail_msg
+		less -X $dir/mail_msg
 	)
 }
 
