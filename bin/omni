@@ -11,6 +11,8 @@
 #
 # Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 
+export PATH=/usr/bin:/usr/sbin
+
 if [ "$1" = "setup" ]; then
 	shift
 	script=`readlink -f $0`
@@ -40,6 +42,8 @@ fi
 : ${illumos_clone:="$wd/illumos-omnios"}
 : ${omnios_clone:="$wd/omnios-build"}
 : ${lxdata_clone:="$wd/lx-port-data"}
+: ${kayak_clone:="$wd/kayak"}
+: ${kayak_image:="rpool/kayak_image"}
 : ${omnios_buildtmp:="$wd/tmp"}
 : ${omnios_buildrepo:="$wd/repo"}
 : ${illumos_env:="$wd/omnios.env"}
@@ -293,6 +297,22 @@ build_omnios()
 	./buildctl build continue
 }
 
+build_media()
+{
+	[ "`zonename`" = "global" ] || \
+	    abort "Install media can only be built in the GZ."
+
+	zfs list $kayak_image >/dev/null 2>&1 && \
+	    $PFEXEC zfs destroy -R $kayak_image
+
+	(
+		cd $kayak_clone
+		export PKGURL=file://$omnios_buildrepo
+		export PREBUILT_ILLUMOS=$illumos_clone
+		$PFEXEC gmake install-usb clean
+	)
+}
+
 onu_illumos()
 {
 	[ -d $illumos_clone/packages/i386/nightly-nd ] \
@@ -521,6 +541,8 @@ Operations:
     update_omnios    - update your local omnios build environment       (uo)
     build_omnios     - build OmniOS                                     (bo)
 
+    build_media      - build OmniOS install media (GZ only)             (bm)
+
     onu              - Create a new boot environment from the local
                        built omnios-illumos
 
@@ -562,6 +584,7 @@ for op in "$@"; do
 	bi|build_illumos)		build_illumos ;;
 	uo|update_omnios)		update_omnios ;;
 	bo|build_omnios)		build_omnios ;;
+	bm|build_media)			build_media ;;
 	mail_msg|mm)			view_mail_msg ;;
 	onu)				onu_illumos ;;
 	cleanup)			cleanup ;;
