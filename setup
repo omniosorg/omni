@@ -236,6 +236,7 @@ check_pkg ooce/runtime/python-36
 gitclone illumos-omnios
 gitclone omnios-build
 [ $role -gt 1 -a "$branch" = "master" ] && gitclone lx-port-data omniosorg
+gitclone kayak
 
 install_config
 install_env
