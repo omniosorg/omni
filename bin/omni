@@ -209,7 +209,7 @@ upstream_diff()
 					printf("%-69s %s\n", issue, commit)
 				commit = 0
 			}
-			/^commit / 	{ op(); commit = $2 }
+			/^commit /	{ op(); commit = $2 }
 			/^    [0-9][0-9][0-9][0-9] / {
 				gsub(/  +/, " ")
 				issue = substr($0, 0, 69)
@@ -238,7 +238,7 @@ upstream_diff()
 				# Clear array
 				split("", files)
 			}
-			/^commit / 	{ op(); commit = $2 }
+			/^commit /	{ op(); commit = $2 }
 			/OS-[0-9]/ {
 				gsub(/  +/, " ")
 				issue = substr($0, 0, 69)
@@ -268,6 +268,21 @@ update_omnios()
 		then
 			git push origin $branch
 			git push origin --tags
+		fi
+	)
+}
+
+update_kayak()
+{
+	check_repo "$kayak_clone" $branch
+	banner "Updating $release kayak"
+	(
+		cd $kayak_clone
+		git pull upstream $branch --no-edit
+		echo
+		if anything_to_push && ask "Push updates to github/$gituser?"
+		then
+			git push origin $branch
 		fi
 	)
 }
@@ -541,6 +556,7 @@ Operations:
     update_omnios    - update your local omnios build environment       (uo)
     build_omnios     - build OmniOS                                     (bo)
 
+    update_kayak     - update your local kayak clone                    (uk)
     build_media      - build OmniOS install media (GZ only)             (bm)
 
     onu              - Create a new boot environment from the local
@@ -584,6 +600,7 @@ for op in "$@"; do
 	bi|build_illumos)		build_illumos ;;
 	uo|update_omnios)		update_omnios ;;
 	bo|build_omnios)		build_omnios ;;
+	uk|update_kayak)		update_kayak ;;
 	bm|build_media)			build_media ;;
 	mail_msg|mm)			view_mail_msg ;;
 	onu)				onu_illumos ;;
@@ -594,7 +611,7 @@ for op in "$@"; do
 	lp|lx_pick)			is dev && lx_pick || help ;;
 	le|lx_end)			is dev && lx_end || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
-	*) 				help ;;
+	*)				help ;;
     esac
 done
 
