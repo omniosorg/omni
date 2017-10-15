@@ -69,8 +69,8 @@ Current configuration ($CFGFILE):
     Branch:               $branch
     Privilege Escalation: $PFEXEC
 
-    Illumos Clone:        $illumos_clone
-    Illumos Env File:     $illumos_env
+    illumos Clone:        $illumos_clone
+    illumos Env File:     $illumos_env
 
     OmniOS Clone:         $omnios_clone
     OmniOS Build Area:    $omnios_buildtmp
