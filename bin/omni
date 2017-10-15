@@ -353,16 +353,21 @@ view_mail_msg()
 	)
 }
 
-cleanup()
+reset_buildrepo()
 {
-	echo "Clearing temporary build directory..."
-	[ -d "$omnios_buildtmp" ] && rm -rf "$omnios_buildtmp"
-	echo "Clearing build repository..."
 	if [ -d "$omnios_buildrepo" ]; then
 		rm -rf $omnios_buildrepo
 		pkgrepo create $omnios_buildrepo
 		pkgrepo add-publisher -s $omnios_buildrepo omnios
 	fi
+}
+
+cleanup()
+{
+	echo "Clearing temporary build directory..."
+	[ -d "$omnios_buildtmp" ] && rm -rf "$omnios_buildtmp"
+	echo "Clearing build repository..."
+	reset_buildrepo
 	echo "Removing build logs..."
 	find $omnios_clone -type f -name build.log\* -exec rm {} +
 	echo "Cleaning illumos-omnios..."
@@ -560,6 +565,7 @@ Operations:
                        built omnios-illumos
 
     cleanup          - reset build environment to clean state
+    reset_repo       - clear and re-initialise the build repo           (rr)
 EOM
 
 	is dev && cat << EOM
@@ -602,6 +608,7 @@ for op in "$@"; do
 	mail_msg|mm)			view_mail_msg ;;
 	onu)				onu_illumos ;;
 	cleanup)			cleanup ;;
+	rr|reset_repo|repo_reset)	reset_buildrepo ;;
 	ud|upstream_diff)		is dev && upstream_diff || help ;;
 	mg|merge_gate)			is dev && merge_gate || help ;;
 	lb|lx_begin)			is dev && lx_begin || help ;;
