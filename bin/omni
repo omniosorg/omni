@@ -599,8 +599,8 @@ help()
 	cat << EOM
 omni [-n|-y] <operation>
 
-    -n                  - assume no to all questions.
-    -y                  - assume yes to all questions.
+    -c <file>           - Use alternative configuration file.
+    -y/-n               - assume yes/no to all questions.
 
 Operations (defaults for optional arguments are shown in []):
 
