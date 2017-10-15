@@ -315,9 +315,17 @@ build_illumos()
 build_omnios()
 {
 	typeset arg="${@:-${omnios_buildarg}}"
-	cd $omnios_clone/build
-	[ -z "$USER" ] && USER=LOGNAME
-	./buildctl build $arg
+	(
+		cd $omnios_clone/build
+		[ -z "$USER" -a -n "$LOGNAME" ] && USER="$LOGNAME"
+		./buildctl build $arg
+	)
+}
+
+build_world()
+{
+	build_illumos &
+	build_omnios "$@"
 }
 
 build_media()
@@ -576,6 +584,10 @@ Operations (defaults for optional arguments are shown in []):
     update_omnios       - update your local omnios build environment       (uo)
     build_omnios [args] - build OmniOS `printf "%-36s" "[$omnios_buildarg]"`(bo)
 
+    build_world [args]  - build illumos-omnios and OmniOS in parallel.     (bw)
+			  The default env file is used for illumos, any
+                          provided arguments are passed to 'build_omnios'
+
     update_kayak        - update your local kayak clone                    (uk)
     build_media         - build OmniOS install media (GZ only)             (bm)
 
@@ -622,6 +634,7 @@ case $op in
 	bi|build_illumos)		build_illumos "$@" ;;
 	uo|update_omnios)		update_omnios ;;
 	bo|build_omnios)		build_omnios "$@" ;;
+	bw|build_world)			build_world "$@" ;;
 	uk|update_kayak)		update_kayak ;;
 	bm|build_media)			build_media ;;
 	mail_msg|mm)			view_mail_msg ;;
