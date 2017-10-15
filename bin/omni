@@ -47,6 +47,8 @@ fi
 : ${omnios_buildtmp:="$wd/tmp"}
 : ${omnios_buildrepo:="$wd/repo"}
 : ${illumos_env:="$wd/omnios.env"}
+#: ${omnios_buildarg:="continue"}
+: ${omnios_buildarg:="parallel 3"}
 : ${role:=1}
 : ${answer:=}
 
@@ -289,8 +291,10 @@ update_kayak()
 
 build_illumos()
 {
-	banner "Starting illumos-omnios $release build..."
-	/opt/onbld/bin/nightly $illumos_env &
+	typeset env="${1:-${illumos_env}}"
+	typeset benv=`basename $env`
+	banner "Starting illumos-omnios $release build... ($benv)"
+	/opt/onbld/bin/nightly $env &
 	nightlypid=$!
 	while [ ! -f $illumos_clone/log/nightly.log ]; do
 		sleep 1
@@ -307,9 +311,10 @@ build_illumos()
 
 build_omnios()
 {
+	typeset arg="${1:-${omnios_buildarg}}"
 	cd $omnios_clone/build
 	[ -z "$USER" ] && USER=LOGNAME
-	./buildctl build continue
+	./buildctl build $arg
 }
 
 build_media()
@@ -557,44 +562,44 @@ help()
 	cat << EOM
 omni [-n|-y] <operation>
 
-    -n               - assume no to all questions.
-    -y               - assume yes to all questions.
+    -n                  - assume no to all questions.
+    -y                  - assume yes to all questions.
 
-Operations:
+Operations (defaults for optional arguments are shown in []):
 
-    update_illumos   - update your local omnios illumos environment     (ui)
-    build_illumos    - build omnios-illumos                             (bi)
-    mail_msg         - view mail_msg file from last build               (mm)
+    update_illumos      - update your local omnios illumos environment     (ui)
+    build_illumos [env] - build omnios-illumos [omnios.env]                (bi)
+    mail_msg            - view mail_msg file from last build               (mm)
 
-    update_omnios    - update your local omnios build environment       (uo)
-    build_omnios     - build OmniOS                                     (bo)
+    update_omnios       - update your local omnios build environment       (uo)
+    build_omnios [args] - build OmniOS `printf "%-36s" "[$omnios_buildarg]"`(bo)
 
-    update_kayak     - update your local kayak clone                    (uk)
-    build_media      - build OmniOS install media (GZ only)             (bm)
+    update_kayak        - update your local kayak clone                    (uk)
+    build_media         - build OmniOS install media (GZ only)             (bm)
 
-    onu              - Create a new boot environment from the local
-                       built omnios-illumos
-    destroy_onu      - Remove all ONU boot environments                 (do)
+    onu                 - Create a new boot environment from the locally
+                          built copy of omnios-illumos
+    destroy_onu         - Remove all ONU boot environments                 (do)
 
-    cleanup          - reset build environment to clean state
-    reset_repo       - clear and re-initialise the build repo           (rr)
+    cleanup             - reset build environment to clean state
+    reset_repo          - clear and re-initialise the build repo           (rr)
 EOM
 
 	is dev && cat << EOM
 
-    upstream_diff    - show changes between omnios-illumos master and   (ud)
-                       upstream (bloody only)
-    merge_gate       - merge changes from upstream illumos-gate to new  (mg)
-                       branch.
-    lx_begin         - begin the upstream lx zone merge process.        (lb)
-    lx_pick          - evaluate the next lx commit.                     (lp)
-    lx_end           - finish the lx zone merge process.                (le)
+    upstream_diff       - show changes between omnios-illumos master and   (ud)
+                          upstream (bloody only)
+    merge_gate          - merge changes from upstream illumos-gate to new  (mg)
+                          branch.
+    lx_begin            - begin the upstream lx zone merge process.        (lb)
+    lx_pick             - evaluate the next lx commit.                     (lp)
+    lx_end              - finish the lx zone merge process.                (le)
 
 EOM
 
 	is guardian && cat << EOM
 
-    push_upstreams   - Push upstream branches to github/omniosorg       (pu)
+    push_upstreams      - Push upstream branches to github/omniosorg       (pu)
 
 EOM
 
@@ -607,14 +612,14 @@ EOM
 [ "$1" = "-y" ] && answer=y && shift
 [ "$1" = "-n" ] && answer=n && shift
 
-[ -z "$@" ] && help
+[ -z "$@" ] && help && exit 0
 
-for op in "$@"; do
-    case $op in
+op="$1"; shift
+case $op in
 	ui|update_illumos)		update_illumos ;;
-	bi|build_illumos)		build_illumos ;;
+	bi|build_illumos)		build_illumos "$@" ;;
 	uo|update_omnios)		update_omnios ;;
-	bo|build_omnios)		build_omnios ;;
+	bo|build_omnios)		build_omnios "$@" ;;
 	uk|update_kayak)		update_kayak ;;
 	bm|build_media)			build_media ;;
 	mail_msg|mm)			view_mail_msg ;;
@@ -629,8 +634,7 @@ for op in "$@"; do
 	le|lx_end)			is dev && lx_end || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
 	*)				help ;;
-    esac
-done
+esac
 
 exit 0
 
