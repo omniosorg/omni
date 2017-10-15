@@ -328,6 +328,17 @@ build_media()
 	)
 }
 
+onu_destroy()
+{
+	ask "Destroy all unused ONU boot environments?" || exit 0
+	beadm list -H | awk -F\; '
+	    $1 ~ /-onu$/ && $3 !~ /N/ { print $1}
+	' | while read be; do
+		echo "Destroying $be"
+		$PFEXEC beadm destroy -F $be
+	done
+}
+
 onu_illumos()
 {
 	[ -d $illumos_clone/packages/i386/nightly-nd ] \
@@ -563,6 +574,7 @@ Operations:
 
     onu              - Create a new boot environment from the local
                        built omnios-illumos
+    destroy_onu      - Remove all ONU boot environments                 (do)
 
     cleanup          - reset build environment to clean state
     reset_repo       - clear and re-initialise the build repo           (rr)
@@ -607,6 +619,7 @@ for op in "$@"; do
 	bm|build_media)			build_media ;;
 	mail_msg|mm)			view_mail_msg ;;
 	onu)				onu_illumos ;;
+	do|destroy_onu)			onu_destroy ;;
 	cleanup)			cleanup ;;
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
 	ud|upstream_diff)		is dev && upstream_diff || help ;;
