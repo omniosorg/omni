@@ -374,18 +374,17 @@ view_mail_msg()
 
 reset_buildrepo()
 {
-	if [ -d "$omnios_buildrepo" ]; then
-		rm -rf $omnios_buildrepo
-		pkgrepo create $omnios_buildrepo
-		pkgrepo add-publisher -s $omnios_buildrepo omnios
-	fi
+	echo "Clearing build IPS repository..."
+	[ -d "$omnios_buildrepo" ] && rm -rf $omnios_buildrepo
+	pkgrepo create $omnios_buildrepo
+	pkgrepo add-publisher -s $omnios_buildrepo omnios
+	pkgrepo -s $omnios_buildrepo info
 }
 
 cleanup()
 {
 	echo "Clearing temporary build directory..."
 	[ -d "$omnios_buildtmp" ] && rm -rf "$omnios_buildtmp"
-	echo "Clearing build repository..."
 	reset_buildrepo
 	echo "Removing build logs..."
 	find $omnios_clone -type f -name build.log\* -exec rm {} +
