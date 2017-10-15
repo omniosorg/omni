@@ -363,9 +363,6 @@ cleanup()
 		pkgrepo create $omnios_buildrepo
 		pkgrepo add-publisher -s $omnios_buildrepo omnios
 	fi
-	echo "Removing built package cache..."
-	[ -f "$omnios_clone/build/built.cache" ] && \
-	    rm -f "$omnios_clone/build/built.cache"
 	echo "Removing build logs..."
 	find $omnios_clone -type f -name build.log\* -exec rm {} +
 	echo "Cleaning illumos-omnios..."
