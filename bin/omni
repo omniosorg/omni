@@ -21,6 +21,10 @@ if [ "$1" = "setup" ]; then
 fi
 
 CFGFILE=$HOME/.omni
+if [ "$1" = "-c" -a -n "$2" ]; then
+	CFGFILE="$2"
+	shift 2
+fi
 
 if [ ! -f "$CFGFILE" ]; then
 	cat <<- EOM
@@ -54,6 +58,29 @@ else
 fi
 : ${role:=1}
 : ${answer:=}
+
+show_config()
+{
+	cat << EOM
+
+Current configuration ($CFGFILE):
+
+    Release:              $release
+    Branch:               $branch
+    Privilege Escalation: $PFEXEC
+
+    Illumos Clone:        $illumos_clone
+    Illumos Env File:     $illumos_env
+
+    OmniOS Clone:         $omnios_clone
+    OmniOS Build Area:    $omnios_buildtmp
+    OmniOS Build Args:    $omnios_buildarg
+    IPS Build Repo:       $omnios_buildrepo
+
+    Kayak Clone:          $kayak_clone
+
+EOM
+}
 
 banner()
 {
@@ -577,6 +604,8 @@ omni [-n|-y] <operation>
 
 Operations (defaults for optional arguments are shown in []):
 
+    show_config         - display the current configuration                (cfg)
+
     update_illumos      - update your local omnios illumos environment     (ui)
     build_illumos [env] - build omnios-illumos [omnios.env]                (bi)
     mail_msg            - view mail_msg file from last build               (mm)
@@ -630,6 +659,7 @@ EOM
 
 op="$1"; shift
 case $op in
+	cfg|sc|show_config)		show_config ;;
 	ui|update_illumos)		update_illumos ;;
 	bi|build_illumos)		build_illumos "$@" ;;
 	uo|update_omnios)		update_omnios ;;
