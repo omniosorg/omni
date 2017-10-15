@@ -314,7 +314,7 @@ build_illumos()
 
 build_omnios()
 {
-	typeset arg="${1:-${omnios_buildarg}}"
+	typeset arg="${@:-${omnios_buildarg}}"
 	cd $omnios_clone/build
 	[ -z "$USER" ] && USER=LOGNAME
 	./buildctl build $arg
