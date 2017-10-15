@@ -47,8 +47,11 @@ fi
 : ${omnios_buildtmp:="$wd/tmp"}
 : ${omnios_buildrepo:="$wd/repo"}
 : ${illumos_env:="$wd/omnios.env"}
-#: ${omnios_buildarg:="continue"}
-: ${omnios_buildarg:="parallel 3"}
+if [ $branch != r151022 ]; then
+	: ${omnios_buildarg:="parallel 3"}
+else
+	: ${omnios_buildarg:="continue"}
+fi
 : ${role:=1}
 : ${answer:=}
 
