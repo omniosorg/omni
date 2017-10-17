@@ -324,18 +324,24 @@ build_illumos()
 	typeset env="${1:-${illumos_env}}"
 	typeset benv=`basename $env`
 	banner "Starting illumos-omnios $release build... ($benv)"
-	/opt/onbld/bin/nightly $env &
+	ctrun -l child -o noorphan /opt/onbld/bin/nightly $env &
 	nightlypid=$!
+	[ -f $illumos_clone/log/nightly.log ] && \
+	    rm -f $illumos_clone/log/nightly.log
 	while [ ! -f $illumos_clone/log/nightly.log ]; do
 		sleep 1
 	done
 	(
 		tail -f $illumos_clone/log/nightly.log \
-		    | egrep '^(====|real|user|sys)'
+		    | egrep '^(====|real |user |sys )'
 	) &
 	tailpid=$!
+	trap "kill -9 $nightlypid $tailpid" INT
 	wait $nightlypid
-	kill $tailpid
+	trap - INT
+	pkill -9 -P $tailpid
+	sleep 5
+	kill -9 $tailpid
 	sleep 5
 }
 
@@ -345,7 +351,7 @@ build_omnios()
 	(
 		cd $omnios_clone/build
 		[ -z "$USER" -a -n "$LOGNAME" ] && USER="$LOGNAME"
-		./buildctl build $arg
+		ctrun -l child -o noorphan ./buildctl build $arg
 	)
 }
 
