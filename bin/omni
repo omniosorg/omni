@@ -432,6 +432,10 @@ cleanup()
 	echo "Cleaning illumos-omnios..."
 	/opt/onbld/bin/bldenv $illumos_env \
 	    "cd $illumos_clone/usr/src && dmake clobber" > /dev/null
+	echo "Removing illumos proto area..."
+	[ -d $illumos_clone/proto ] && rm -rf $illumos_clone/proto
+	echo "Removing illumos packages area..."
+	[ -d $illumos_clone/packages ] && rm -rf $illumos_clone/packages
 }
 
 merge_gate()
