@@ -319,30 +319,51 @@ update_kayak()
 	)
 }
 
+terminate_illumos()
+{
+	banner "Stopping illumos build, please wait..."
+	kill $nightlypid 2>/dev/null
+	pkill -P $tailpid
+	sleep 1
+	kill -9 $tailpid 2>/dev/null
+}
+
 build_illumos()
 {
 	typeset env="${1:-${illumos_env}}"
+
+	lockf="$illumos_clone/log/nightly.lock"
+	if [ -h "$lockf" ]; then
+		ls -l "$lockf" | nawk '{print $NF}' | IFS=. read host user pid
+		kill -0 $pid 2>/dev/null \
+		    && abort "Illumos build already in progress."
+		banner "Stale build lockfile detected, ignoring."
+	fi
+
 	typeset benv=`basename $env`
 	banner "Starting illumos-omnios $release build... ($benv)"
-	ctrun -l child -o noorphan /opt/onbld/bin/nightly $env &
-	nightlypid=$!
+
+	# Remove any stale log file
 	[ -f $illumos_clone/log/nightly.log ] && \
 	    rm -f $illumos_clone/log/nightly.log
-	while [ ! -f $illumos_clone/log/nightly.log ]; do
-		sleep 1
-	done
+
+	ctrun -l child -o noorphan /opt/onbld/bin/nightly $env &
+	nightlypid=$!
+
 	(
+		while [ ! -f $illumos_clone/log/nightly.log ]; do
+			sleep 1
+		done
 		tail -f $illumos_clone/log/nightly.log \
 		    | egrep '^(====|real |user |sys )'
 	) &
 	tailpid=$!
-	trap "kill -9 $nightlypid $tailpid" INT
+
+	trap terminate_illumos INT
 	wait $nightlypid
 	trap - INT
-	pkill -9 -P $tailpid
-	sleep 5
-	kill -9 $tailpid
-	sleep 5
+	terminate_illumos
+	sleep 10
 }
 
 build_omnios()
