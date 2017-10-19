@@ -481,13 +481,14 @@ lx_begin()
 		cd $lxdata_clone
 		git pull
 
-		if [ -f ij-ALL-commits ]; then
-			abort "An LX merge session is in progress, aborting."
-		fi
+		[ -f ij-ALL-commits ] && \
+		    abort "An LX merge session is in progress, aborting."
 
 		check_repo "$illumos_clone" $branch
 		cd $illumos_clone
 		reset_illumos_branch
+		# Ensure that the local branch is fully up-to-date
+		git pull upstream $branch --no-edit --tags || exit 1
 		git checkout upstream_joyent || exit 1
 
 		echo "--- Building list of new commits"
@@ -510,7 +511,7 @@ lx_begin()
 		if [ $num -eq 0 ]; then
 			echo "-- No commits to evaluate."
 			rm -f $lxdata_clone/ij-*
-			git checkout master
+			git checkout $branch
 		else
 			echo "    Leaves $num commit(s)"
 			_branch=joyent_merge/`date +%Y%m%d`01
