@@ -223,10 +223,11 @@ diff_colour()
 
 upstream_diff()
 {
-	if [ "$release" != bloody ]; then
-		echo "Command not available for $release release"
-		return
-	fi
+	typeset arg="$1"
+
+	[ "$release" != bloody ] \
+	    && abort "Command not available for $release release"
+
 	check_repo "$illumos_clone" $branch
 	(
 		cd $illumos_clone
@@ -257,7 +258,7 @@ upstream_diff()
 		reset_illumos_branch
 		git checkout -q upstream_joyent
 		git whatchanged --reverse --no-merges --abbrev-commit $hash.. \
-		    | nawk '
+		    | nawk -vopt=$arg '
 			function op() {
 				if (matched)
 				{
@@ -278,7 +279,8 @@ upstream_diff()
 			/^:/ {
 				files[NR] = sprintf("%s %s", $5, $6)
 			}
-			/ lx / { matched = 1 }
+			opt == "all"	 { matched = 1 }
+			/ lx /		 { matched = 1 }
 			/(brand|fs)\/lx/ { matched = 1 }
 			/\/lx_/		 { matched = 1 }
 			END { op() }
@@ -703,7 +705,7 @@ case $op in
 	do|destroy_onu)			onu_destroy ;;
 	cleanup)			cleanup ;;
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
-	ud|upstream_diff)		is dev && upstream_diff || help ;;
+	ud|upstream_diff)		is dev && upstream_diff "$@" || help ;;
 	mg|merge_gate)			is dev && merge_gate || help ;;
 	lb|lx_begin)			is dev && lx_begin || help ;;
 	lp|lx_pick)			is dev && lx_pick || help ;;
