@@ -13,7 +13,7 @@
 
 # Setup utility for creating an OmniOS build environment.
 
-mydir=`dirname $_`
+mydir=`dirname "$_"`
 
 ips=https://pkg.omniosce.org
 github=https://github.com
@@ -29,7 +29,7 @@ if [[ "$version" != omnios-* ]]; then
 	exit 1
 fi
 
-release=`echo $version | cut -d- -f2`
+release=`echo "$version" | cut -d- -f2`
 branch=$release
 [ "$release" = master ] && release=bloody && branch=master
 
@@ -39,7 +39,7 @@ ask()
 
 	echo "$* (y/n) \\c"
 	while [[ "$a" != [yYnN] ]]; do
-		read a
+		read -r a
 	done
 	[[ "$a" = [yY] ]]
 }
@@ -98,8 +98,6 @@ check_pkg()
 
 check_publisher()
 {
-	typeset publisher="$1"
-
 	echo "--- checking that extra.omnios publisher is set"
 	if ! pkg publisher -H | egrep -s '^extra.omnios '; then
 		echo
@@ -123,16 +121,16 @@ gitclone()
 	typeset user=${2:-$gituser}
 
 	echo "--- Cloning $repo from ${github}/$user"
-	git clone -b $branch ${github}/$user/$repo.git $wd/$repo
+	git clone -b "$branch" "${github}/$user/$repo.git $wd/$repo"
 
 	(
-		cd $wd/$repo
-		git remote add upstream ${github}/omniosorg/$repo
+		cd "$wd/$repo"
+		git remote add upstream "${github}/omniosorg/$repo"
 		if [ "$repo:$branch" = "illumos-omnios:master" ]; then
 			git remote add upstream_gate \
-			    ${github}/illumos/illumos-gate
+			    "${github}/illumos/illumos-gate"
 			git remote add upstream_joyent \
-			    ${github}/joyent/illumos-joyent
+			    "${github}/joyent/illumos-joyent"
 		fi
 	)
 }
@@ -140,7 +138,7 @@ gitclone()
 install_config()
 {
 	echo "--- Installing configuration file"
-	cat << EOM > $HOME/.omni
+	cat << EOM > "$HOME/.omni"
 github=${github}
 gituser=$gituser
 release=$release
@@ -158,13 +156,13 @@ install_env()
 	sed "
 		s^__WORKINGTREE__^$wd^
 		s^__BUILDNUM__^$relnum^
-	" < $mydir/etc/template.env > $wd/omnios.env
+	" < "$mydir/etc/template.env" > "$wd/omnios.env"
 }
 
 install_site()
 {
 	echo "--- Install site.sh"
-	cat << EOM >> $wd/omnios-build/lib/site.sh
+	cat << EOM >> "$wd/omnios-build/lib/site.sh"
 
 # Settings added by omni setup
 
@@ -212,7 +210,7 @@ EOM
 fi
 
 if [ -d "$wd" ]; then
-	if [ `find $wd | wc -l` -ne 1 ]; then
+	if [ "`find "$wd" | wc -l`" -ne 1 ]; then
 		echo "$wd is not empty. Aborting setup."
 		exit 1
 	fi
@@ -254,7 +252,7 @@ or add /opt/ooce/bin to your \$PATH
 EOM
 elif [ "`id -u`" = 0 ] && ask "Create symlink as /usr/bin/omni?"; then
 	[ -h /usr/bin/omni ] && rm -f /usr/bin/omni
-	ln -s `pwd`/bin/omni /usr/bin/omni
+	ln -s "`pwd`/bin/omni" /usr/bin/omni
 	echo
 	echo "Invoke the utility by typing 'omni'"
 else
