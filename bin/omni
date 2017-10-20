@@ -15,8 +15,8 @@ export PATH=/usr/bin:/usr/sbin
 
 if [ "$1" = "setup" ]; then
 	shift
-	script=`readlink -f $0`
-	`dirname $script`/../setup "$@"
+	script=`readlink -f "$0"`
+	"`dirname "$script"`/../setup" "$@"
 	exit 0
 fi
 
@@ -40,24 +40,29 @@ for building OmniOS.
 	exit 0
 fi
 
-. $CFGFILE
+# shellcheck disable=SC1090
+. "$CFGFILE"
 
-: ${PFEXEC:=sudo}
-: ${illumos_clone:="$wd/illumos-omnios"}
-: ${omnios_clone:="$wd/omnios-build"}
-: ${lxdata_clone:="$wd/lx-port-data"}
-: ${kayak_clone:="$wd/kayak"}
-: ${kayak_image:="rpool/kayak_image"}
-: ${omnios_buildtmp:="$wd/tmp"}
-: ${omnios_buildrepo:="$wd/repo"}
-: ${illumos_env:="$wd/omnios.env"}
-if [ $branch != r151022 ]; then
-	: ${omnios_buildarg:="parallel 3"}
+: "${PFEXEC:=sudo}"
+: "${illumos_clone:="$wd/illumos-omnios"}"
+: "${omnios_clone:="$wd/omnios-build"}"
+: "${lxdata_clone:="$wd/lx-port-data"}"
+: "${kayak_clone:="$wd/kayak"}"
+: "${kayak_image:="rpool/kayak_image"}"
+: "${omnios_buildtmp:="$wd/tmp"}"
+: "${omnios_buildrepo:="$wd/repo"}"
+: "${illumos_env:="$wd/omnios.env"}"
+if [ "$branch" != r151022 ]; then
+	: "${omnios_buildarg:="parallel 3"}"
 else
-	: ${omnios_buildarg:="continue"}
+	: "${omnios_buildarg:="continue"}"
 fi
-: ${role:=1}
-: ${answer:=}
+: "${role:=1}"
+: "${answer:=}"
+: "${release:=unknown}"
+: "${gituser:=unknown}"
+
+export ij="$lxdata_clone/ij"
 
 show_config()
 {
@@ -97,7 +102,7 @@ abort()
 
 is()
 {
-	case $* in
+	case "$@" in
 	    dev)	[ "$role" -gt 1 ] && return 0 ;;
 	    guardian)	[ "$role" -gt 2 ] && return 0 ;;
 	esac
@@ -111,7 +116,7 @@ ask()
 	echo "$* (y/n) \\c"
 	[ -n "$a" ] && echo $a
 	while [[ "$a" != [yYnN] ]]; do
-		read a
+		read -r a
 	done
 	[[ "$a" = [yY] ]]
 }
@@ -164,26 +169,26 @@ check_repo()
 update_illumos_bloody()
 {
 	(
-		cd $illumos_clone
+		cd "$illumos_clone"
 		reset_illumos_branch
-		git pull upstream $branch --no-edit --tags
+		git pull upstream "$branch" --no-edit --tags
 
 		for _branch in upstream_gate upstream_joyent; do
 			banner "Updating $_branch branch"
-			git checkout $_branch
-			git pull $_branch master
+			git checkout "$_branch"
+			git pull "$_branch" master
 		done
 
-		git checkout $branch
+		git checkout "$branch"
 
 		echo
 		# Check to see if there are any updates to push back
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
-			for _branch in $branch upstream_gate upstream_joyent
+			for _branch in "$branch" upstream_gate upstream_joyent
 			do
 				banner "Pushing $_branch branch"
-				git push origin $_branch
+				git push origin "$_branch"
 			done
 			git push origin --tags
 		fi
@@ -193,13 +198,13 @@ update_illumos_bloody()
 update_illumos_stable()
 {
 	(
-		cd $illumos_clone
+		cd "$illumos_clone"
 		reset_illumos_branch
-		git pull upstream $branch --no-edit --tags
+		git pull upstream "$branch" --no-edit --tags
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
-			git push origin $branch
+			git push origin "$branch"
 			git push origin --tags
 		fi
 	)
@@ -207,7 +212,7 @@ update_illumos_stable()
 
 update_illumos()
 {
-	check_repo "$illumos_clone" $branch
+	check_repo "$illumos_clone" "$branch"
 	banner "Updating illumos-omnios $release branch"
 	if [ "$release" = bloody ]; then
 		update_illumos_bloody
@@ -228,9 +233,9 @@ upstream_diff()
 	[ "$release" != bloody ] \
 	    && abort "Command not available for $release release"
 
-	check_repo "$illumos_clone" $branch
+	check_repo "$illumos_clone" "$branch"
 	(
-		cd $illumos_clone
+		cd "$illumos_clone"
 
 		echo "GATE:"
 		echo
@@ -250,15 +255,15 @@ upstream_diff()
 			END { op() }
 		    ' | diff_colour
 
-		hash=`joyent_commit`
+		hash="`joyent_commit`"
 		echo
 		echo "JOYENT ($hash..):"
 		echo
 
 		reset_illumos_branch
 		git checkout -q upstream_joyent
-		git whatchanged --reverse --no-merges --abbrev-commit $hash.. \
-		    | nawk -vopt=$arg '
+		git whatchanged --reverse --no-merges --abbrev-commit \
+		    "$hash.." | nawk -v "opt=$arg" '
 			function op() {
 				if (matched)
 				{
@@ -285,22 +290,22 @@ upstream_diff()
 			/\/lx_/		 { matched = 1 }
 			END { op() }
 		    ' | diff_colour
-		git checkout -q $branch
+		git checkout -q "$branch"
 		echo
 	)
 }
 
 update_omnios()
 {
-        check_repo "$omnios_clone" $branch
+        check_repo "$omnios_clone" "$branch"
 	banner "Updating $release OmniOS build"
         (
-		cd $omnios_clone
-		git pull upstream $branch --no-edit --tags
+		cd "$omnios_clone"
+		git pull upstream "$branch" --no-edit --tags
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
-			git push origin $branch
+			git push origin "$branch"
 			git push origin --tags
 		fi
 	)
@@ -308,15 +313,15 @@ update_omnios()
 
 update_kayak()
 {
-	check_repo "$kayak_clone" $branch
+	check_repo "$kayak_clone" "$branch"
 	banner "Updating $release kayak"
 	(
-		cd $kayak_clone
-		git pull upstream $branch --no-edit
+		cd "$kayak_clone"
+		git pull upstream "$branch" --no-edit
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
-			git push origin $branch
+			git push origin "$branch"
 		fi
 	)
 }
@@ -324,10 +329,10 @@ update_kayak()
 terminate_illumos()
 {
 	banner "Stopping illumos build, please wait..."
-	kill $nightlypid 2>/dev/null
-	pkill -P $tailpid
+	kill "$nightlypid" 2>/dev/null
+	pkill -P "$tailpid"
 	sleep 1
-	kill -9 $tailpid 2>/dev/null
+	kill -9 "$tailpid" 2>/dev/null
 }
 
 build_illumos()
@@ -336,28 +341,28 @@ build_illumos()
 
 	lockf="$illumos_clone/log/nightly.lock"
 	if [ -h "$lockf" ]; then
+		# shellcheck disable=SC2012 disable=SC2034 disable=SC2162
 		ls -l "$lockf" | nawk '{print $NF}' | IFS=. read host user pid
-		kill -0 $pid 2>/dev/null \
+		kill -0 "$pid" 2>/dev/null \
 		    && abort "Illumos build already in progress."
 		banner "Stale build lockfile detected, ignoring."
 	fi
 
-	typeset benv=`basename $env`
+	typeset benv="`basename "$env"`"
 	banner "Starting illumos-omnios $release build... ($benv)"
 
 	# Remove any stale log file
-	[ -f $illumos_clone/log/nightly.log ] && \
-	    rm -f $illumos_clone/log/nightly.log
+	export logf="$illumos_clone/log/nightly.log"
+	[ -f "$logf" ] && rm -f "$logf"
 
-	ctrun -l child -o noorphan /opt/onbld/bin/nightly $env &
+	ctrun -l child -o noorphan /opt/onbld/bin/nightly "$env" &
 	nightlypid=$!
 
 	(
-		while [ ! -f $illumos_clone/log/nightly.log ]; do
+		while [ ! -f "$logf" ]; do
 			sleep 1
 		done
-		tail -f $illumos_clone/log/nightly.log \
-		    | egrep '^(====|real |user |sys )'
+		tail -f "$logf" | egrep '^(====|real |user |sys )'
 	) &
 	tailpid=$!
 
@@ -370,10 +375,11 @@ build_illumos()
 
 build_omnios()
 {
-	typeset arg="${@:-${omnios_buildarg}}"
+	typeset arg="${*:-${omnios_buildarg}}"
 	(
-		cd $omnios_clone/build
+		cd "$omnios_clone/build"
 		[ -z "$USER" -a -n "$LOGNAME" ] && USER="$LOGNAME"
+		# shellcheck disable=SC2086
 		ctrun -l child -o noorphan ./buildctl build $arg
 	)
 }
@@ -393,9 +399,9 @@ build_media()
 	    $PFEXEC zfs destroy -R $kayak_image
 
 	(
-		cd $kayak_clone
-		export PKGURL=file://$omnios_buildrepo
-		export PREBUILT_ILLUMOS=$illumos_clone
+		cd "$kayak_clone"
+		export PKGURL="file://$omnios_buildrepo"
+		export PREBUILT_ILLUMOS="$illumos_clone"
 		$PFEXEC gmake install-usb clean
 	)
 }
@@ -405,44 +411,44 @@ onu_destroy()
 	ask "Destroy all unused ONU boot environments?" || exit 0
 	beadm list -H | awk -F\; '
 	    $1 ~ /-onu$/ && $3 !~ /N/ { print $1}
-	' | while read be; do
+	' | while read -r be; do
 		echo "Destroying $be"
-		$PFEXEC beadm destroy -F $be
+		$PFEXEC beadm destroy -F "$be"
 	done
 }
 
 onu_illumos()
 {
-	[ -d $illumos_clone/packages/i386/nightly-nd ] \
-	    || abort "No built illumos packages found."
+	pkgdir="$illumos_clone/packages/i386/nightly-nd"
+	[ -d "$pkgdir" ] || abort "No built illumos packages found."
 
-	be=`date +%Y%m%d01`
+	be="`date +%Y%m%d01`"
 	while beadm list -H | egrep -s "^${be}-onu;"; do
 		((be = be + 1))
 	done
 	banner "ONU to new BE $be-onu"
-	$PFEXEC /opt/onbld/bin/onu -t $be-onu \
-	    -d $illumos_clone/packages/i386/nightly-nd
+	$PFEXEC /opt/onbld/bin/onu -t "$be-onu" -d "$pkgdir"
 }
 
 view_mail_msg()
 {
-	[ ! -d $illumos_clone/log ] && abort "No log directory present."
+	[ ! -d "$illumos_clone/log" ] && abort "No log directory present."
 	(
-		cd $illumos_clone/log
+		cd "$illumos_clone/log"
+		# shellcheck disable=SC2012
 		dir="`ls -1tr | fgrep 'log.' | tail -1`"
 		[ -f "$dir/mail_msg" ] || abort "Mail message not present."
-		less -X $dir/mail_msg
+		less -X "$dir/mail_msg"
 	)
 }
 
 reset_buildrepo()
 {
 	echo "Clearing build IPS repository..."
-	[ -d "$omnios_buildrepo" ] && rm -rf $omnios_buildrepo
-	pkgrepo create $omnios_buildrepo
-	pkgrepo add-publisher -s $omnios_buildrepo omnios
-	pkgrepo -s $omnios_buildrepo info
+	[ -d "$omnios_buildrepo" ] && rm -rf "$omnios_buildrepo"
+	pkgrepo create "$omnios_buildrepo"
+	pkgrepo add-publisher -s "$omnios_buildrepo" omnios
+	pkgrepo -s "$omnios_buildrepo" info
 }
 
 cleanup()
@@ -451,90 +457,90 @@ cleanup()
 	[ -d "$omnios_buildtmp" ] && rm -rf "$omnios_buildtmp"
 	reset_buildrepo
 	echo "Removing build logs..."
-	find $omnios_clone -type f -name build.log\* -exec rm {} +
+	find "$omnios_clone" -type f -name build.log\* -exec rm {} +
 	echo "Cleaning illumos-omnios..."
-	/opt/onbld/bin/bldenv $illumos_env \
+	/opt/onbld/bin/bldenv "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake clobber" > /dev/null
 	echo "Removing illumos proto area..."
-	[ -d $illumos_clone/proto ] && rm -rf $illumos_clone/proto
+	[ -d "$illumos_clone/proto" ] && rm -rf "$illumos_clone/proto"
 	echo "Removing illumos packages area..."
-	[ -d $illumos_clone/packages ] && rm -rf $illumos_clone/packages
+	[ -d "$illumos_clone/packages" ] && rm -rf "$illumos_clone/packages"
 }
 
 merge_gate()
 {
 	ask "Merge changes from upstream illumos-gate?" || exit 0
-	check_repo "$illumos_clone" $branch
+	check_repo "$illumos_clone" "$branch"
 	(
-		_branch=upstream_merge/`date +%Y%m%d`01
-		cd $illumos_clone
-		git checkout -b $_branch || exit 1
-		check_repo "$illumos_clone" $_branch
+		_branch="upstream_merge/`date +%Y%m%d`01"
+		cd "$illumos_clone"
+		git checkout -b "$_branch" || exit 1
+		check_repo "$illumos_clone" "$_branch"
 		git merge upstream_gate
 	) || exit 1
 }
 
 lx_begin()
 {
-	check_repo "$lxdata_clone" $branch
+	check_repo "$lxdata_clone" "$branch"
 	(
-		cd $lxdata_clone
+		cd "$lxdata_clone"
 		git pull
 
 		[ -f ij-ALL-commits ] && \
 		    abort "An LX merge session is in progress, aborting."
 
-		check_repo "$illumos_clone" $branch
-		cd $illumos_clone
+
+		check_repo "$illumos_clone" "$branch"
+		cd "$illumos_clone"
 		reset_illumos_branch
 		# Ensure that the local branch is fully up-to-date
-		git pull upstream $branch --no-edit --tags || exit 1
+		git pull upstream "$branch" --no-edit --tags || exit 1
 		git checkout upstream_joyent || exit 1
 
 		echo "--- Building list of new commits"
 
-		git log --reverse --no-merges --format=%H `joyent_commit`.. \
-		    > $lxdata_clone/ij-ALL-commits
+		git log --reverse --no-merges --format=%H "`joyent_commit`.." \
+		    > "${ij}-ALL-commits"
 
-		echo "    Found  `wc -l < $lxdata_clone/ij-ALL-commits`"\
+		echo "    Found  `wc -l < "$lxdata_clone/ij-ALL-commits"`"\
 		    "commit(s)"
 
 		echo "--- Filtering out gate commits"
 
-		git log master --format=%H > $lxdata_clone/ij-GATE-commits
-		fgrep -v -f $lxdata_clone/ij-GATE-commits \
-		    $lxdata_clone/ij-ALL-commits \
-		    > $lxdata_clone/ij-TODO-commits
+		git log master --format=%H > "${ij}-GATE-commits"
+		fgrep -v -f "${ij}-GATE-commits" "${ij}-ALL-commits" \
+		    > "${ij}-TODO-commits"
 
-		num=`wc -l < $lxdata_clone/ij-TODO-commits`
+		num="`wc -l < "${ij}-TODO-commits"`"
 
-		if [ $num -eq 0 ]; then
+		if [ "$num" -eq 0 ]; then
 			echo "-- No commits to evaluate."
-			rm -f $lxdata_clone/ij-*
-			git checkout $branch
+			rm -f "$ij"-*
+			git checkout "$branch"
 		else
 			echo "    Leaves $num commit(s)"
-			_branch=joyent_merge/`date +%Y%m%d`01
-			git checkout -b $_branch master || exit 1
-			check_repo "$illumos_clone" $_branch
+			_branch="joyent_merge/`date +%Y%m%d`01"
+			git checkout -b "$_branch" master || exit 1
+			check_repo "$illumos_clone" "$_branch"
 		fi
 	) || exit 1
 }
 
 lx_pick()
 {
-	_branch=`repo_branch $illumos_clone`
-	[[ $_branch = joyent_merge/* ]] || \
+	_branch="`repo_branch "$illumos_clone"`"
+	[[ "$_branch" = joyent_merge/* ]] || \
 	    abort "On wrong branch, $_branch (have you run lx_begin?)"
-	[ -f $lxdata_clone/ij-TODO-commits ] || \
-	    abort "No LX merge session in progress"
+
+	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
 
 	(
-		cd $illumos_clone
+		cd "$illumos_clone"
 
 		while :; do
-			num=`wc -l < $lxdata_clone/ij-TODO-commits`
-			if [ $num -lt 1 ]; then
+			num="`wc -l < "${ij}-TODO-commits"`"
+			if [ "$num" -lt 1 ]; then
 				cat << EOM
 
 --- No commits remaining. Run 'lx_end' to finish.
@@ -543,22 +549,22 @@ EOM
 				exit 1
 			fi
 			banner "$num commit(s) remaining"
-			hash=`head -1 $lxdata_clone/ij-TODO-commits`
-			git show --stat $hash
+			hash="`head -1 "${ij}-TODO-commits"`"
+			git show --stat "$hash"
 
 			echo
 
 			if ask "Cherry pick this commit?"; then
-				echo $hash >> $lxdata_clone/ij-picked-commits
+				echo "$hash" >> "${ij}-picked-commits"
 				cherry=1
 			else
-				echo $hash >> $lxdata_clone/ij-skipped-commits
+				echo "$hash" >> "${ij}-skipped-commits"
 				cherry=0
 			fi
-			echo $hash >> $lxdata_clone/ij-decided-commits
-			sed -i "/$hash/d" $lxdata_clone/ij-TODO-commits
-			if [ $cherry -eq 1 ]; then
-				if ! git cherry-pick $hash; then
+			echo "$hash" >> "${ij}-decided-commits"
+			sed -i "/$hash/d" "${ij}-TODO-commits"
+			if [ "$cherry" -eq 1 ]; then
+				if ! git cherry-pick "$hash"; then
 					banner "Problem during cherry-pick."
 					exit 1
 				fi
@@ -569,36 +575,35 @@ EOM
 
 lx_end()
 {
-	_branch=`repo_branch $illumos_clone`
+	_branch="`repo_branch "$illumos_clone"`"
 	[[ $_branch = joyent_merge/* ]] || \
 	    abort "On wrong branch, $_branch (have you run lx_begin?)"
-	[ -f $lxdata_clone/ij-TODO-commits ] || \
-	    abort "No LX merge session in progress"
-	[ -s $lxdata_clone/ij-TODO-commits ] && \
+	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
+	[ -s "${ij}-TODO-commits" ] && \
 	    abort "Not all commits have been evaluated,"\
 	    "run 'lx_pick' until none remain."
 
-	lasthash=`tail -1 $lxdata_clone/ij-decided-commits`
+	lasthash="`tail -1 "$lxdata_clone/ij-decided-commits"`"
 
 	(
 		banner "Archiving port data"
 
-		cd $lxdata_clone
-		arc=`date +%Y/%b%d`
-		[ -d $arc ] && abort "Archive directory $arc alread exists."
-		mkdir -p $arc
+		cd "$lxdata_clone"
+		arc="`date +%Y/%b%d`"
+		[ -d "$arc" ] && abort "Archive directory $arc alread exists."
+		mkdir -p "$arc"
 		rm -f ij-TODO-commits	# Now empty
 		rm -f ij-GATE-commits
-		mv ij-* $arc
+		mv ij-* "$arc"
 
-		git add $arc
-		git commit -m "LX Port data for $_branch" $arc
+		git add "$arc"
+		git commit -m "LX Port data for $_branch" "$arc"
 
 		is guardian \
 		    && ask "Push lx-port-data back to github/omniosorg?" \
 		    && git push
 
-		cd $illumos_clone
+		cd "$illumos_clone"
 
 		banner "Updating README.OmniOS ($lasthash)"
 
@@ -608,7 +613,7 @@ lx_end()
 		    README.OmniOS
 
 		banner "The following commits have been picked."
-		git log --reverse master..$_branch
+		git log --reverse "master..$_branch"
 		echo
 	)
 
@@ -616,14 +621,14 @@ lx_end()
 
 push_upstreams()
 {
-	check_repo "$illumos_clone" $branch
+	check_repo "$illumos_clone" "$branch"
 	ask "Push upstream branches to github/omniosorg?" || exit 0
 	(
-		cd $illumos_clone
+		cd "$illumos_clone"
 
 		for _branch in upstream_gate upstream_joyent; do
 			banner "Pushing $_branch branch to github/omniosorg"
-			git push upstream $_branch
+			git push upstream "$_branch"
 		done
 	)
 }
@@ -689,7 +694,7 @@ EOM
 [ "$1" = "-y" ] && answer=y && shift
 [ "$1" = "-n" ] && answer=n && shift
 
-[ -z "$@" ] && help && exit 0
+[ -z "$*" ] && help && exit 0
 
 op="$1"; shift
 case $op in
@@ -703,7 +708,7 @@ case $op in
 	bm|build_media)			build_media ;;
 	mail_msg|mm)			view_mail_msg ;;
 	onu)				onu_illumos ;;
-	do|destroy_onu)			onu_destroy ;;
+	"do"|destroy_onu)		onu_destroy ;;
 	cleanup)			cleanup ;;
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
 	ud|upstream_diff)		is dev && upstream_diff "$@" || help ;;
