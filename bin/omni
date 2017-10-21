@@ -83,6 +83,7 @@ Current configuration ($CFGFILE):
     IPS Build Repo:       $omnios_buildrepo
 
     Kayak Clone:          $kayak_clone
+    LX Data Clone:        $lxdata_clone
 
 EOM
 }
