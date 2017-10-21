@@ -652,6 +652,7 @@ Operations (defaults for optional arguments are shown in []):
     update_omnios       - update your local omnios build environment       (uo)
     build_omnios [args] - build OmniOS `printf "%-36s" "[$omnios_buildarg]"`(bo)
 
+    update_world        - update local illumos and omnios                  (uw)
     build_world [args]  - build illumos-omnios and OmniOS in parallel.     (bw)
 			  The default env file is used for illumos, any
                           provided arguments are passed to 'build_omnios'
@@ -703,6 +704,7 @@ case $op in
 	bi|build_illumos)		build_illumos "$@" ;;
 	uo|update_omnios)		update_omnios ;;
 	bo|build_omnios)		build_omnios "$@" ;;
+	uw|update_world)		update_illumos && update_omnios ;;
 	bw|build_world)			build_world "$@" ;;
 	uk|update_kayak)		update_kayak ;;
 	bm|build_media)			build_media ;;
