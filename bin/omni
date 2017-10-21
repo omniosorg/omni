@@ -401,9 +401,9 @@ build_media()
 
 	(
 		cd "$kayak_clone"
-		export PKGURL="file://$omnios_buildrepo"
-		export PREBUILT_ILLUMOS="$illumos_clone"
-		$PFEXEC gmake install-usb clean
+		$PFEXEC gmake install-usb clean \
+		    PKGURL="file://$omnios_buildrepo" \
+		    PREBUILT_ILLUMOS="$illumos_clone"
 	)
 }
 
