@@ -342,10 +342,9 @@ build_illumos()
 
 	lockf="$illumos_clone/log/nightly.lock"
 	if [ -h "$lockf" ]; then
-		# shellcheck disable=SC2012 disable=SC2034 disable=SC2162
-		ls -l "$lockf" | nawk '{print $NF}' | IFS=. read host user pid
+		readlink "$lockf" | IFS=. read host user pid
 		kill -0 "$pid" 2>/dev/null \
-		    && abort "Illumos build already in progress."
+		    && abort "Illumos build already in progress ($host/$user)."
 		banner "Stale build lockfile detected, ignoring."
 	fi
 
