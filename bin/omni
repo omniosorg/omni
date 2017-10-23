@@ -342,7 +342,7 @@ build_illumos()
 
 	lockf="$illumos_clone/log/nightly.lock"
 	if [ -h "$lockf" ]; then
-		readlink "$lockf" | IFS=. read host user pid
+		readlink "$lockf" | IFS=. read -r host user pid
 		kill -0 "$pid" 2>/dev/null \
 		    && abort "Illumos build already in progress ($host/$user)."
 		banner "Stale build lockfile detected, ignoring."
