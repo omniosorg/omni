@@ -455,6 +455,7 @@ cleanup()
 {
 	echo "Clearing temporary build directory..."
 	[ -d "$omnios_buildtmp" ] && rm -rf "$omnios_buildtmp"
+	[ -d "$omnios_clone/tmp.repo" ] && rm -rf "$omnios_clone/tmp.repo"
 	reset_buildrepo
 	echo "Removing build logs..."
 	find "$omnios_clone" -type f -name build.log\* -exec rm {} +
