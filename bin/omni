@@ -395,6 +395,8 @@ build_media()
 	[ "`zonename`" = "global" ] || \
 	    abort "Install media can only be built in the GZ."
 
+	banner "Building media..."
+
 	zfs list $kayak_image >/dev/null 2>&1 && \
 	    $PFEXEC zfs destroy -R $kayak_image
 
