@@ -121,7 +121,7 @@ gitclone()
 	typeset user=${2:-$gituser}
 
 	echo "--- Cloning $repo from ${github}/$user"
-	git clone -b "$branch" "${github}/$user/$repo.git $wd/$repo"
+	git clone -b "$branch" "${github}/$user/$repo.git" "$wd/$repo"
 
 	(
 		cd "$wd/$repo"
