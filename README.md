@@ -10,8 +10,8 @@ to build bloody, you need a machine running up-to-date bloody and the same
 for a stable branch such as r151022 - you will need a machine running the
 same release version.
 
-You will also need a Github account and to have forked the `illumos-omnios`
-and `omnios-build` repositories before proceeding. The username for the
+You will also need a Github account and to have forked the `illumos-omnios`,
+`omnios-build`, and `kayak` repositories before proceeding. The username for the
 github account must be provided as an argument to the setup script.
 
 ### Quick start (building in global zone)
