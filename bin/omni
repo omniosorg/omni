@@ -432,7 +432,7 @@ onu_illumos()
 	$PFEXEC /opt/onbld/bin/onu -t "$be-onu" -d "$pkgdir"
 }
 
-view_mail_msg()
+mail_msg()
 {
 	[ ! -d "$illumos_clone/log" ] && abort "No log directory present."
 	(
@@ -440,8 +440,13 @@ view_mail_msg()
 		# shellcheck disable=SC2012
 		dir="`ls -1tr | fgrep 'log.' | tail -1`"
 		[ -f "$dir/mail_msg" ] || abort "Mail message not present."
-		less -X "$dir/mail_msg"
+		echo "$illumos_clone/log/$dir/mail_msg"
 	)
+}
+
+view_mail_msg()
+{
+	less -X "`mail_msg`"
 }
 
 reset_buildrepo()
@@ -481,6 +486,168 @@ merge_gate()
 		check_repo "$illumos_clone" "$_branch"
 		git merge upstream_gate
 	) || exit 1
+}
+
+# Should use `jq` - add to omnios-extra?
+json_get_key()
+{
+	typeset file="$1"
+	typeset key="$2"
+
+	grep "\"$key\":" "$file" | cut -d'"' -f4 | head -1
+}
+
+github_request()
+{
+	typeset auth="$1"
+	typeset api="$2"
+	typeset op="$3"
+	typeset data="$4"
+	typeset method="${5:-POST}"
+	typeset op="`mktemp`"
+
+	curl -s -X "$method" \
+	    -o "$op" \
+	    -u "$auth" \
+	    -H "Accept: application/vnd.github.v3+json" \
+	    -H "Content-Type: application/json" \
+	    --data-binary "@$data" \
+	    "https://api.github.com/$api"
+
+	echo "$op"
+}
+
+create_pull_request()
+{
+	typeset token="$1"
+	typeset duser="$2"
+	typeset drepo="$3"
+	typeset dbranch="$4"
+	typeset suser="$5"
+	typeset sbranch="$6"
+	typeset title="$7"
+	typeset bodyfile="$8"
+
+	perl -i -p -e '
+		s/\n/\\n/g;
+		s/(["])/\\\1/g;
+	' "$bodyfile"
+
+	typeset data="`mktemp`"
+
+	cat <<- EOM > "$data"
+		{
+			"title":	"$title",
+			"head":		"$suser:$sbranch",
+			"base":		"$dbranch",
+			"body":		"`cat "$bodyfile"`"
+		}
+	EOM
+
+	op=`github_request "$suser:$token" \
+	    "repos/$duser/$drepo/pulls" "$op" "$data"`
+
+	rm -f "$data"
+
+	typeset prurl="`json_get_key "$op" html_url`"
+	typeset number="`json_get_key "$op" number`"
+
+	if [ -z "$prurl" ]; then
+		cat "$op"
+		rm -f "$op"
+		abort "Problem creating PR"
+	fi
+
+	rm -f "$op"
+
+	echo "PR $number created, assigning label."
+
+	# Assign label via the issues API
+
+	cat <<- EOM > "$data"
+		{
+			"labels": [
+				"upstream-merge",
+				"on-hold"
+			]
+		}
+	EOM
+
+	op=`github_request "$suser:$token" \
+	    "repos/$duser/$drepo/issues/$number" "$op" "$data" PATCH`
+cat $op
+	rm -f "$op"
+
+	echo "Finished, the PR can be found at:"
+	echo
+	echo "    $prurl"
+}
+
+pull_request()
+{
+	_branch="`repo_branch "$illumos_clone"`"
+
+	# This is just a sanity check to look for a branch name ending in
+	# yyyymmddnn
+	if echo "$_branch" | /usr/xpg4/bin/egrep -s '/201[0-9]{7}$'; then
+		:
+	else
+		abort "Current branch ($_branch) is not an upstream merge."
+	fi
+
+	ask "Push local branch $_branch ready for pull-request?" || exit 0
+
+	git -C "$illumos_clone" push -u origin "$_branch"
+	git -C "$illumos_clone" checkout "$branch"
+
+	prbase="https://github.com/omniosorg/illumos-omnios/compare"
+	prbranch="master...$gituser:$_branch?expand=1"
+
+	token="`git config user.token`"
+	if [ -z "$token" ] || ! ask "Create PR automatically on GitHub?"; then
+		cat <<- EOM
+
+			Local branch $_branch has been pushed to github.
+			Visit the following URL to create a pull-request:
+
+			    $prbase/$prbranch
+
+		EOM
+		return
+	fi
+
+	# Automate creation of the pull-request (experimental)
+	# Requires that your 2FA token is stored in your git config
+	# as user.token.
+	#     get config [--global] --add user.token <token>
+
+	prdata=`mktemp`
+	cat << EOM > "$prdata"
+Weekly upstream for $_branch
+
+## Backports
+
+_TBC_
+
+## onu
+
+_TBC_
+
+## mail_msg
+
+\`\`\`
+`cat "\`mail_msg\`"`
+\`\`\`
+EOM
+
+	# token duser drepo dbranch suser sbranch title bodyfile
+	create_pull_request "$token" \
+		omniosorg illumos-omnios "$branch" \
+		"$gituser" "$_branch" \
+		"Upstream merge $_branch" \
+		"$prdata"
+
+	rm -f "$prdata"
 }
 
 lx_begin()
@@ -632,9 +799,9 @@ lx_abort()
 
 	ask "Stop lx merge and reset state?" || exit 0
 
-	git -C $illumos_clone reset HEAD --hard
-	git -C $illumos_clone checkout master
-	git -C $illumos_clone branch -D $_branch
+	git -C "$illumos_clone" reset HEAD --hard
+	git -C "$illumos_clone" checkout master
+	git -C "$illumos_clone" branch -D "$_branch"
 	rm -f "$ij"*
 
 	banner "LX merge aborted and $_branch branch deleted."
@@ -695,6 +862,7 @@ EOM
                           upstream (bloody only)
     merge_gate          - merge changes from upstream illumos-gate to new  (mg)
                           branch.
+    pull_request        - push local branch and prepare for pull request   (pr)
     lx_begin            - begin the upstream lx zone merge process.        (lb)
     lx_pick             - evaluate the next lx commit.                     (lp)
     lx_end              - finish the lx zone merge process.                (le)
@@ -737,6 +905,7 @@ case $op in
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
 	ud|upstream_diff)		is dev && upstream_diff "$@" || help ;;
 	mg|merge_gate)			is dev && merge_gate || help ;;
+	pr|pull_request)		is dev && pull_request || help ;;
 	lb|lx_begin)			is dev && lx_begin || help ;;
 	lp|lx_pick)			is dev && lx_pick || help ;;
 	le|lx_end)			is dev && lx_end || help ;;
