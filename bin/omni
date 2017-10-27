@@ -622,6 +622,24 @@ lx_end()
 
 }
 
+lx_abort()
+{
+	[ -f "${ij}-ALL-commits" ] || abort "No LX merge session in progress"
+
+	_branch="`repo_branch "$illumos_clone"`"
+	[[ $_branch = joyent_merge/* ]] || \
+	    abort "On wrong branch, $_branch (is merge in progress?)"
+
+	ask "Stop lx merge and reset state?" || exit 0
+
+	git -C $illumos_clone reset HEAD --hard
+	git -C $illumos_clone checkout master
+	git -C $illumos_clone branch -D $_branch
+	rm -f "$ij"*
+
+	banner "LX merge aborted and $_branch branch deleted."
+}
+
 push_upstreams()
 {
 	check_repo "$illumos_clone" "$branch"
@@ -680,6 +698,7 @@ EOM
     lx_begin            - begin the upstream lx zone merge process.        (lb)
     lx_pick             - evaluate the next lx commit.                     (lp)
     lx_end              - finish the lx zone merge process.                (le)
+    lx_abort            - stop the lx merge process and reset everything   (la)
 
 EOM
 
@@ -721,6 +740,7 @@ case $op in
 	lb|lx_begin)			is dev && lx_begin || help ;;
 	lp|lx_pick)			is dev && lx_pick || help ;;
 	le|lx_end)			is dev && lx_end || help ;;
+	la|lx_abort)			is dev && lx_abort || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
 	*)				help ;;
 esac
