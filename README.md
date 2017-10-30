@@ -10,14 +10,6 @@ to build bloody, you need a machine running up-to-date bloody and the same
 for a stable branch such as r151022 - you will need a machine running the
 same release version.
 
-If you just want to build then you can check out the code directly from the
-_omniosorg_ GitHub repository - just use `omniosorg` as the github username
-when running the setup script.
-
-However, if you want to do any development then you will also need a Github
-account and to have forked the `illumos-omnios`, `omnios-build`, and `kayak`
-repositories before proceeding. The username for your github account must be
-provided as an argument to the setup script.
 
 ### Quick start (building in global zone)
 
@@ -33,10 +25,36 @@ provided as an argument to the setup script.
 % pkg install git
 % git clone https://github.com/omniosorg/omni.git
 % cd omni
-% ./setup /build <omniosorg|github username>
+```
 
+If you just want to build then you can check out the code directly from the
+_omniosorg_ GitHub repository - just pass the build directory as an argument
+to the setup script:
+
+```
+% ./setup /build
+```
+
+However, if you want to do any development then you will also need a GitHub
+account and to have forked the `illumos-omnios`, `omnios-build`, and `kayak`
+repositories before proceeding. The username for your github account must be
+provided as an argument to the setup script.
+
+```
+% ./setup /build <github username>
+```
+
+Then you can kick off an update and a build.
+
+```
 % omni update_world
 % omni build_world
+```
+
+To build media, use the `build_media` target:
+
+```
+% omni build_media
 ```
 
 ### Example build zone setup

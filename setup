@@ -197,7 +197,7 @@ if [ -z "$wd" ]; then
 	exit 1
 fi
 
-if [[ "$gituser" != "omniosorg" -a "$github" != git@* ]]; then
+if [[ "$gituser" != "omniosorg" && "$github" != git@* ]]; then
 	cat << EOM
 
 -- By default, HTTPS will be used to access GitHub.
