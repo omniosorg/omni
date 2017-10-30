@@ -331,7 +331,7 @@ terminate_illumos()
 {
 	banner "Stopping illumos build, please wait..."
 	kill "$nightlypid" 2>/dev/null
-	pkill -P "$tailpid"
+	pkill -9 -P "$tailpid"
 	sleep 1
 	kill -9 "$tailpid" 2>/dev/null
 }
@@ -601,7 +601,7 @@ pull_request()
 	git -C "$illumos_clone" checkout "$branch"
 
 	prbase="https://github.com/omniosorg/illumos-omnios/compare"
-	prbranch="master...$gituser:$_branch?expand=1"
+	prbranch="$branch...$gituser:$_branch?expand=1"
 
 	token="`git config user.token`"
 	if [ -z "$token" ] || ! ask "Create PR automatically on GitHub?"; then
