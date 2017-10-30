@@ -70,6 +70,7 @@ show_config()
 
 Current configuration ($CFGFILE):
 
+    GitHub User:          $gituser
     Release:              $release
     Branch:               $branch
     Privilege Escalation: $PFEXEC
