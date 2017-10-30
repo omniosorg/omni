@@ -125,6 +125,7 @@ ask()
 
 anything_to_push()
 {
+	[ "$gituser" = omniosorg ] && return 1
 	git for-each-ref --format="%(refname:short) %(push:track)" refs/heads \
 	    | egrep -s '\[ahead '
 }
