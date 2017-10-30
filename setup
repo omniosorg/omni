@@ -190,13 +190,14 @@ fi
 
 wd="$1"
 gituser="$2"
+[ -z "$gituser" ] && gituser=omniosorg
 
-if [ -z "$wd" -o -z "$gituser" ]; then
-	echo "Syntax: setup [-ssh] <working directory> <git username>"
+if [ -z "$wd" ]; then
+	echo "Syntax: setup [-ssh] <working directory> [git username]"
 	exit 1
 fi
 
-if [[ "$github" != git@* ]]; then
+if [[ "$gituser" != "omniosorg" -a "$github" != git@* ]]; then
 	cat << EOM
 
 -- By default, HTTPS will be used to access GitHub.
