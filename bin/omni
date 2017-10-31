@@ -577,7 +577,7 @@ create_pull_request()
 
 	op=`github_request "$suser:$token" \
 	    "repos/$duser/$drepo/issues/$number" "$op" "$data" PATCH`
-cat $op
+cat "$op"
 	rm -f "$op"
 
 	echo "Finished, the PR can be found at:"
