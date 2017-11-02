@@ -621,7 +621,7 @@ pull_request()
 	# Automate creation of the pull-request (experimental)
 	# Requires that your 2FA token is stored in your git config
 	# as user.token.
-	#     get config [--global] --add user.token <token>
+	#     git config [--global] --add user.token <token>
 
 	prdata=`mktemp`
 	cat << EOM > "$prdata"
