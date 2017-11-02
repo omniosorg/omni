@@ -467,7 +467,7 @@ cleanup()
 	[ -d "$omnios_clone/tmp.repo" ] && rm -rf "$omnios_clone/tmp.repo"
 	reset_buildrepo
 	echo "Removing build logs..."
-	find "$omnios_clone" -type f -name build.log\* -exec rm {} +
+	find "$omnios_clone" -type f -name build.log\* -exec rm -f {} +
 	echo "Cleaning illumos-omnios..."
 	/opt/onbld/bin/bldenv "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake clobber" > /dev/null
