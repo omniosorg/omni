@@ -599,6 +599,7 @@ pull_request()
 
 	ask "Push local branch $_branch ready for pull-request?" || exit 0
 
+	reset_illumos_branch
 	git -C "$illumos_clone" push -u origin "$_branch"
 	git -C "$illumos_clone" checkout "$branch"
 
@@ -623,6 +624,12 @@ pull_request()
 	# as user.token.
 	#     git config [--global] --add user.token <token>
 
+	if [[ "`uname -v`" = omnios-${_branch/\//-}-* ]]; then
+		uname="`uname -a`"
+	else
+		uname="_TBC_"
+	fi
+
 	prdata=`mktemp`
 	cat << EOM > "$prdata"
 Weekly upstream for $_branch
@@ -633,7 +640,9 @@ _TBC_
 
 ## onu
 
-_TBC_
+\`\`\`
+$uname
+\`\`\`
 
 ## mail_msg
 
