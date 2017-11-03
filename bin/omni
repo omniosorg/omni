@@ -395,7 +395,9 @@ build_world()
 build_media()
 {
 	[ "`zonename`" = "global" ] || \
-	    abort "Install media can only be built in the GZ."
+	    abort "Install media can only be built in the global zone."
+
+	export PKGURL="${1:-file://$omnios_buildrepo}"
 
 	banner "Building media..."
 
@@ -405,7 +407,7 @@ build_media()
 	(
 		cd "$kayak_clone"
 		$PFEXEC gmake install-usb clean \
-		    PKGURL="file://$omnios_buildrepo" \
+		    PKGURL="$PKGURL" \
 		    PREBUILT_ILLUMOS="$illumos_clone"
 	)
 }
@@ -857,7 +859,8 @@ Operations (defaults for optional arguments are shown in []):
                           provided arguments are passed to 'build_omnios'
 
     update_kayak        - update your local kayak clone                    (uk)
-    build_media         - build OmniOS install media (GZ only)             (bm)
+    build_media [URL]   - build OmniOS install media (GZ only)             (bm)
+                          Defaults to using local repo if URL not provided.
 
     onu                 - Create a new boot environment from the locally
                           built copy of omnios-illumos
@@ -908,7 +911,7 @@ case $op in
 	uw|update_world)		update_illumos && update_omnios ;;
 	bw|build_world)			build_world "$@" ;;
 	uk|update_kayak)		update_kayak ;;
-	bm|build_media)			build_media ;;
+	bm|build_media)			build_media "$@" ;;
 	mail_msg|mm)			view_mail_msg ;;
 	onu)				onu_illumos ;;
 	"do"|destroy_onu)		onu_destroy ;;
