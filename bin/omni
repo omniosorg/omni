@@ -52,6 +52,7 @@ fi
 : "${omnios_buildtmp:="$wd/tmp"}"
 : "${omnios_buildrepo:="$wd/repo"}"
 : "${illumos_env:="$wd/omnios.env"}"
+: "${illumos_logkeep:=7}"
 if [ "$branch" != r151022 ]; then
 	: "${omnios_buildarg:="parallel 3"}"
 else
@@ -462,7 +463,7 @@ reset_buildrepo()
 	pkgrepo -s "$omnios_buildrepo" info
 }
 
-cleanup()
+cleanup_omnios()
 {
 	echo "Clearing temporary build directory..."
 	[ -d "$omnios_buildtmp" ] && rm -rf "$omnios_buildtmp"
@@ -470,6 +471,10 @@ cleanup()
 	reset_buildrepo
 	echo "Removing build logs..."
 	find "$omnios_clone" -type f -name build.log\* -exec rm -f {} +
+}
+
+cleanup_illumos()
+{
 	echo "Cleaning illumos-omnios..."
 	/opt/onbld/bin/bldenv "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake clobber" > /dev/null
@@ -477,6 +482,25 @@ cleanup()
 	[ -d "$illumos_clone/proto" ] && rm -rf "$illumos_clone/proto"
 	echo "Removing illumos packages area..."
 	[ -d "$illumos_clone/packages" ] && rm -rf "$illumos_clone/packages"
+	echo "Removing old logs..."
+	if [ -d "$illumos_clone/log" ]; then
+		find "$illumos_clone/log" -type f -ctime "+$illumos_logkeep" \
+		    -exec rm -f {} +
+		find  "$illumos_clone/log" -type d -name 'log.20*' \
+		    -exec rmdir {} + 2>/dev/null
+	fi
+}
+
+cleanup()
+{
+	typeset target="${1:-all}"
+
+	case "$target" in
+	    omnios)	cleanup_omnios ;;
+	    illumos)	cleanup_illumos ;;
+	    all)	cleanup_omnios; cleanup_illumos ;;
+	    *)		echo "Unknown target $target" ;;
+	esac
 }
 
 merge_gate()
@@ -865,7 +889,8 @@ Operations (defaults for optional arguments are shown in []):
                           built copy of omnios-illumos
     destroy_onu         - Remove all ONU boot environments                 (do)
 
-    cleanup             - reset build environment to clean state
+    cleanup [target]    - reset build environment to clean state. Target
+                          is optional and can be 'omnios' or 'illumos'.
     reset_repo          - clear and re-initialise the build repo           (rr)
 EOM
 
@@ -914,7 +939,7 @@ case $op in
 	mail_msg|mm)			view_mail_msg ;;
 	onu)				onu_illumos ;;
 	"do"|destroy_onu)		onu_destroy ;;
-	cleanup)			cleanup ;;
+	cleanup)			cleanup "$@" ;;
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
 	ud|upstream_diff)		is dev && upstream_diff "$@" || help ;;
 	mg|merge_gate)			is dev && merge_gate || help ;;
