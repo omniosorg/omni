@@ -925,7 +925,6 @@ EOM
 EOM
 
 	cat << EOM
-
     version             - Display program version ($OMNIVER)
 
 NB: Ops can be abbreviated to the term shown in brackets, e.g. 'omni uo'
