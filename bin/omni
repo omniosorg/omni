@@ -1,5 +1,7 @@
 #!/bin/ksh -e
 
+# {{{ CDDL Licence header
+#
 # This file and its contents are supplied under the terms of the
 # Common Development and Distribution License ("CDDL"), version 1.0.
 # You may only use this file in accordance with the terms of version
@@ -9,9 +11,12 @@
 # source. A copy of the CDDL is also available via the Internet at
 # http://www.illumos.org/license/CDDL.
 #
+# }}}
+#
 # Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 
 export PATH=/usr/bin:/usr/sbin
+export OMNIVER=master
 
 if [ "$1" = "setup" ]; then
 	shift
@@ -857,6 +862,11 @@ push_upstreams()
 	)
 }
 
+version()
+{
+	echo $OMNIVER
+}
+
 help()
 {
 	cat << EOM
@@ -915,6 +925,9 @@ EOM
 EOM
 
 	cat << EOM
+
+    version             - Display program version ($OMNIVER)
+
 NB: Ops can be abbreviated to the term shown in brackets, e.g. 'omni uo'
 	
 EOM
@@ -949,8 +962,11 @@ case $op in
 	le|lx_end)			is dev && lx_end || help ;;
 	la|lx_abort)			is dev && lx_abort || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
+	ver|version)			version ;;
 	*)				help ;;
 esac
 
 exit 0
 
+# Vim hints
+# vim:fdm=marker
