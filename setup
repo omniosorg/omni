@@ -31,7 +31,13 @@ fi
 
 release=`echo "$version" | cut -d- -f2`
 branch=$release
-[ "$release" = master ] && release=bloody && branch=master
+if [ "$release" = master ]; then
+	release=bloody
+	branch=master
+	relnum="`head -1 /etc/release | awk '{print $3}' | cut -c1-`"
+else
+	relnum="${release:1}"
+fi
 
 ask()
 {
@@ -152,7 +158,6 @@ EOM
 install_env()
 {
 	echo "--- Install omnios.env"
-	[ "$release" = "bloody" ] && relnum=151023 || relnum=${release:1}
 	sed "
 		s^__WORKINGTREE__^$wd^
 		s^__BUILDNUM__^$relnum^
