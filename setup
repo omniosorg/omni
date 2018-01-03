@@ -236,6 +236,7 @@ check_pkg developer/omnios-build-tools
 check_pkg ooce/developer/build/ant
 check_pkg ooce/library/freetype2
 check_pkg ooce/runtime/python-36
+[ "$branch" = master ] && check_pkg ooce/text/asciidoc
 
 gitclone illumos-omnios
 gitclone omnios-build
