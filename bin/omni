@@ -257,7 +257,7 @@ upstream_diff()
 				commit = 0
 			}
 			/^commit /	{ op(); commit = $2 }
-			/^    [0-9][0-9][0-9][0-9] / {
+			/^    (Revert ")?[0-9][0-9][0-9][0-9] / {
 				gsub(/  +/, " ")
 				issue = substr($0, 0, 69)
 			}
