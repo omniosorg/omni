@@ -849,6 +849,16 @@ lx_abort()
 	banner "LX merge aborted and $_branch branch deleted."
 }
 
+igrep()
+{
+	git -C "$illumos_clone" log --grep "$@"
+}
+
+ogrep()
+{
+	git -C "$omnios_clone" log --grep "$@"
+}
+
 push_upstreams()
 {
 	check_repo "$illumos_clone" "$branch"
@@ -926,6 +936,8 @@ EOM
 EOM
 
 	cat << EOM
+    igrep <pattern>     - Grep the illumos-omnios git log                  (ig)
+    ogrep <pattern>     - Grep the omnios-build git log                    (og)
     version             - Display program version ($OMNIVER)
 
 NB: Ops can be abbreviated to the term shown in brackets, e.g. 'omni uo'
@@ -962,6 +974,8 @@ case $op in
 	le|lx_end)			is dev && lx_end || help ;;
 	la|lx_abort)			is dev && lx_abort || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
+	ig|igrep)			igrep "$@" ;;
+	og|ogrep)			ogrep "$@" ;;
 	ver|version)			version ;;
 	*)				help ;;
 esac
