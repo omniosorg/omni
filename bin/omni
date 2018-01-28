@@ -257,7 +257,7 @@ upstream_diff()
 				commit = 0
 			}
 			/^commit /	{ op(); commit = $2 }
-			/^    (Revert ")?[0-9][0-9][0-9][0-9] / {
+			/^    (backout: *|Revert ")?[0-9][0-9][0-9][0-9] / {
 				gsub(/  +/, " ")
 				issue = substr($0, 0, 69)
 			}
@@ -484,6 +484,7 @@ cleanup_illumos()
 	echo "Cleaning illumos-omnios..."
 	/opt/onbld/bin/bldenv "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake clobber" > /dev/null
+	#git -C "$illumos_clone" clean -fd
 	echo "Removing illumos proto area..."
 	[ -d "$illumos_clone/proto" ] && rm -rf "$illumos_clone/proto"
 	echo "Removing illumos packages area..."
