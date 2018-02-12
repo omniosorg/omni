@@ -406,7 +406,7 @@ build_media()
 
 	export PKGURL="${1:-file://$omnios_buildrepo}"
 
-	banner "Building media..."
+	banner "Building media from $PKGURL..."
 
 	zfs list $kayak_image >/dev/null 2>&1 && \
 	    $PFEXEC zfs destroy -R $kayak_image
