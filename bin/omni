@@ -13,7 +13,7 @@
 #
 # }}}
 #
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2018 OmniOS Community Edition (OmniOSce) Association.
 
 export PATH=/usr/bin:/usr/sbin
 export OMNIVER=master
