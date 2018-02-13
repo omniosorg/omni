@@ -390,7 +390,17 @@ onu_destroy()
 
 onu_illumos()
 {
-	pkgdir="$illumos_clone/packages/i386/nightly-nd"
+	case $1 in
+	    -d)
+		pkgdir="$illumos_clone/packages/i386/nightly"
+		;;
+	    -nd|"")
+		pkgdir="$illumos_clone/packages/i386/nightly-nd"
+		;;
+	    *)
+		abort "Unknown argument ($1) to onu."
+		;;
+	esac
 	[ -d "$pkgdir" ] || abort "No built illumos packages found."
 
 	be="`date +%Y%m%d01`"
@@ -865,8 +875,9 @@ Operations (defaults for optional arguments are shown in []):
     build_media [URL]   - build OmniOS install media (GZ only)             (bm)
                           Defaults to using local repo if URL not provided.
 
-    onu                 - Create a new boot environment from the locally
-                          built copy of omnios-illumos
+    onu [-d|-nd]        - Create a new boot environment from the locally
+                          built copy of omnios-illumos. Non-debug packages
+                          by default or as per provided option.
     destroy_onu         - Remove all ONU boot environments                 (do)
 
     cleanup [target]    - reset build environment to clean state. Target
@@ -921,7 +932,7 @@ case $op in
 	uk|update_kayak)		update_kayak ;;
 	bm|build_media)			build_media "$@" ;;
 	mail_msg|mm)			view_mail_msg ;;
-	onu)				onu_illumos ;;
+	onu)				onu_illumos "$@" ;;
 	"do"|destroy_onu)		onu_destroy ;;
 	cleanup)			cleanup "$@" ;;
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
