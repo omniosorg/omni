@@ -34,7 +34,7 @@ branch=$release
 if [ "$release" = master ]; then
 	release=bloody
 	branch=master
-	relnum="`head -1 /etc/release | awk '{print $3}' | cut -c1-`"
+	relnum="`head -1 /etc/release | awk '{print $3}' | cut -c2-`"
 else
 	relnum="${release:1}"
 fi
