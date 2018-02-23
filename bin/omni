@@ -850,8 +850,8 @@ ctfcompare()
 
 ctfcheck()
 {
-	proto="$illumos_clone/proto/root_i386"
-	[ -d "$proto" ] || abort "No proto root found"
+	proto="$illumos_clone/proto/root_i386-nd"
+	[ -d "$proto" ] || abort "No proto root found @ $proto"
 
 	echo "Checking kernel/amd64/genunix"
 	ctfcompare "$proto" kernel/amd64/genunix
