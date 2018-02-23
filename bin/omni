@@ -49,6 +49,7 @@ fi
 . "$CFGFILE"
 
 : "${PFEXEC:=sudo}"
+: "${CTFDUMP:=/opt/onbld/bin/i386/ctfdump}"
 : "${illumos_clone:="$wd/illumos-omnios"}"
 : "${omnios_clone:="$wd/omnios-build"}"
 : "${lxdata_clone:="$wd/lx-port-data"}"
@@ -818,6 +819,62 @@ lx_abort()
 	banner "LX merge aborted and $_branch branch deleted."
 }
 
+ctfextract()
+{
+	$CTFDUMP -t "$@" 2>/dev/null | sed -n '
+		/^  </ {
+			s/ refers to.*//
+			p
+		}
+	'
+}
+
+ctfcompare()
+{
+	typeset proto="$1"
+	typeset object="$2"
+
+	[ -f "$proto/$object" ] || abort "$proto/$object not present"
+
+	[ -d /tmp/ctf ] || mkdir /tmp/ctf
+
+	old=`mktemp -p /tmp/ctf`; ctfextract "/$object" > "$old"
+	new=`mktemp -p /tmp/ctf`; ctfextract "$proto/$object" > "$new"
+
+	if gdiff -qw "$old" "$new" >/dev/null; then
+		rm -f "$old" "$new"
+	else
+		echo "Differences in $object - vimdiff $old $new"
+	fi
+}
+
+ctfcheck()
+{
+	proto="$illumos_clone/proto/root_i386"
+	[ -d "$proto" ] || abort "No proto root found"
+
+	echo "Checking kernel/amd64/genunix"
+	ctfcompare "$proto" kernel/amd64/genunix
+
+	echo "Checking platform/i86pc/kernel/amd64/unix"
+	ctfcompare "$proto" platform/i86pc/kernel/amd64/unix
+
+	echo "Checking drivers in root"
+	find "$proto/kernel/drv/amd64" -type f -perm -+x | while read -r f; do
+		bf="`basename "$f"`"
+		[ -f "/kernel/drv/amd64/$bf" ] || continue
+		ctfcompare "$proto" "kernel/drv/amd64/$bf"
+	done
+
+	echo "Checking drivers in usr"
+	find "$proto/usr/kernel/drv/amd64" -type f -perm -+x | while read -r f
+	do
+		bf="`basename "$f"`"
+		[ -f "/usr/kernel/drv/amd64/$bf" ] || continue
+		ctfcompare "$proto" "usr/kernel/drv/amd64/$bf"
+	done
+}
+
 igrep()
 {
 	git -C "$illumos_clone" log --grep "$@"
@@ -897,6 +954,8 @@ EOM
     lx_end              - finish the lx zone merge process.                (le)
     lx_abort            - stop the lx merge process and reset everything   (la)
 
+    ctfcheck            - compare CTF type data between running system     (ctf)
+                          and last built bits
 EOM
 
 	is guardian && cat << EOM
@@ -944,6 +1003,7 @@ case $op in
 	le|lx_end)			is dev && lx_end || help ;;
 	la|lx_abort)			is dev && lx_abort || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
+	ctf|ctfcheck)			is dev && ctfcheck ;;
 	ig|igrep)			igrep "$@" ;;
 	og|ogrep)			ogrep "$@" ;;
 	ver|version)			version ;;
