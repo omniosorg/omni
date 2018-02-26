@@ -877,6 +877,32 @@ ctfcheck()
 	done
 }
 
+patch_motd()
+{
+	tmpdir="`mktemp -d`"
+	pkgrecv -s "https://pkg.omniosce.org/$release/staging" \
+	    -d "$tmpdir" --raw -m latest SUNWcs
+	cd "$tmpdir/SUNWcs/"* || exit 1
+	hash="`grep motd manifest | grep '=false$' | awk '{print $2}'`"
+	[ -f "$hash" ] || abort "No file called $hash"
+	cp "$hash" motd
+	vi motd
+
+	echo
+	cat motd
+	ask "Push updated motd?" || exit 0
+	echo
+
+	nhash="`digest -a sha1 motd`"
+	echo "New motd hash $nhash"
+	mv motd "$nhash"
+	sed -i "/file $hash /s/ $hash chash=[^ ]* / $nhash /" manifest
+	echo "Publishing..."
+	pkgsend publish -s "$omnios_buildrepo" -d . manifest
+
+	echo "Updated SUNWcs is now in your local repo ready to stage."
+}
+
 igrep()
 {
 	git -C "$illumos_clone" log --grep "$@"
@@ -963,6 +989,7 @@ EOM
 	is guardian && cat << EOM
 
     push_upstreams      - Push upstream branches to github/omniosorg       (pu)
+    motd                - Manually change /etc/motd in SUNWcs
 
 EOM
 
@@ -999,12 +1026,13 @@ case $op in
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
 	ud|upstream_diff)		is dev && upstream_diff "$@" || help ;;
 	mg|merge_gate)			is dev && merge_gate || help ;;
-	pr|pull_request)		is dev && pull_request || help ;;
+	pr|pull_request)		is dev && pull_request "$@" || help ;;
 	lb|lx_begin)			is dev && lx_begin || help ;;
 	lp|lx_pick)			is dev && lx_pick || help ;;
 	le|lx_end)			is dev && lx_end || help ;;
 	la|lx_abort)			is dev && lx_abort || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
+	motd)				is guardian && patch_motd || help ;;
 	ctf|ctfcheck)			is dev && ctfcheck ;;
 	ig|igrep)			igrep "$@" ;;
 	og|ogrep)			ogrep "$@" ;;
