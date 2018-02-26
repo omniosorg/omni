@@ -589,13 +589,15 @@ create_pull_request()
 pull_request()
 {
 	_branch="`repo_branch "$illumos_clone"`"
+	typeset force
+	[ "$1" = "-f" ] && force=1 || force=0
 
 	# This is just a sanity check to look for a branch name ending in
 	# yyyymmddnn
 	if echo "$_branch" | /usr/xpg4/bin/egrep -s '/201[0-9]{7}$'; then
 		:
 	else
-		abort "Current branch ($_branch) is not an upstream merge."
+		[ $force -eq 1 ] || abort "$_branch is not an upstream merge."
 	fi
 
 	ask "Push local branch $_branch ready for pull-request?" || exit 0
