@@ -391,20 +391,25 @@ onu_destroy()
 
 onu_illumos()
 {
-	case $1 in
-	    -d)
-		pkgdir="$illumos_clone/packages/i386/nightly"
-		;;
-	    -nd|"")
-		pkgdir="$illumos_clone/packages/i386/nightly-nd"
-		;;
-	    *)
-		abort "Unknown argument ($1) to onu."
-		;;
-	esac
+	while [[ "$1" = -* ]]; do
+		case $1 in
+		    -d)
+			pkgdir="$illumos_clone/packages/i386/nightly"
+			;;
+		    -nd|"")
+			pkgdir="$illumos_clone/packages/i386/nightly-nd"
+			;;
+		    *)
+			abort "Unknown argument ($1) to onu."
+			;;
+		esac
+		shift
+	done
+
+	[ -z "$1" ] && be="`date +%Y%m%d01`" || be="$1"
+
 	[ -d "$pkgdir" ] || abort "No built illumos packages found."
 
-	be="`date +%Y%m%d01`"
 	while beadm list -H | egrep -s "^${be}-onu;"; do
 		((be = be + 1))
 	done
@@ -960,7 +965,7 @@ Operations (defaults for optional arguments are shown in []):
     build_media [URL]   - build OmniOS install media (GZ only)             (bm)
                           Defaults to using local repo if URL not provided.
 
-    onu [-d|-nd]        - Create a new boot environment from the locally
+    onu [-d|-nd] [name] - Create a new boot environment from the locally
                           built copy of omnios-illumos. Non-debug packages
                           by default or as per provided option.
     destroy_onu         - Remove all ONU boot environments                 (do)
