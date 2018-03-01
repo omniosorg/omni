@@ -391,6 +391,7 @@ onu_destroy()
 
 onu_illumos()
 {
+	pkgdir="$illumos_clone/packages/i386/nightly-nd"
 	while [[ "$1" = -* ]]; do
 		case $1 in
 		    -d)
