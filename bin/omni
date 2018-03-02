@@ -17,6 +17,7 @@
 
 export PATH=/usr/bin:/usr/sbin
 export OMNIVER=master
+export SHELL=/bin/sh
 
 if [ "$1" = "setup" ]; then
 	shift
@@ -136,7 +137,6 @@ anything_to_push()
 	git for-each-ref --format="%(refname:short) %(push:track)" refs/heads \
 	    | egrep -s '\[ahead '
 }
-
 
 repo_branch()
 {
@@ -416,6 +416,14 @@ onu_illumos()
 	done
 	banner "ONU to new BE $be-onu"
 	$PFEXEC /opt/onbld/bin/onu -t "$be-onu" -d "$pkgdir"
+}
+
+build_cscope()
+{
+	/opt/onbld/bin/bldenv "$illumos_env" \
+	    "cd $illumos_clone/usr/src && dmake setup" > /dev/null
+	/opt/onbld/bin/bldenv "$illumos_env" \
+	    "cd $illumos_clone/usr/src && dmake cscope.out"
 }
 
 mail_msg()
@@ -943,8 +951,8 @@ help()
 	cat << EOM
 omni [-n|-y] <operation>
 
-    -c <file>           - Use alternative configuration file.
-    -y/-n               - assume yes/no to all questions.
+    -c <file>           - Use alternative configuration file
+    -y/-n               - assume yes/no to all questions
 
 Operations (defaults for optional arguments are shown in []):
 
@@ -958,21 +966,21 @@ Operations (defaults for optional arguments are shown in []):
     build_omnios [args] - build OmniOS `printf "%-36s" "[$omnios_buildarg]"`(bo)
 
     update_world        - update local illumos and omnios                  (uw)
-    build_world [args]  - build illumos-omnios and OmniOS in parallel.     (bw)
+    build_world [args]  - build illumos-omnios and OmniOS in parallel      (bw)
 			  The default env file is used for illumos, any
                           provided arguments are passed to 'build_omnios'
 
     update_kayak        - update your local kayak clone                    (uk)
     build_media [URL]   - build OmniOS install media (GZ only)             (bm)
-                          Defaults to using local repo if URL not provided.
+                          Defaults to using local repo if URL not provided
 
     onu [-d|-nd] [name] - Create a new boot environment from the locally
                           built copy of omnios-illumos. Non-debug packages
-                          by default or as per provided option.
+                          by default or as per provided option
     destroy_onu         - Remove all ONU boot environments                 (do)
 
     cleanup [target]    - reset build environment to clean state. Target
-                          is optional and can be 'omnios' or 'illumos'.
+                          is optional and can be 'omnios' or 'illumos'
     reset_repo          - clear and re-initialise the build repo           (rr)
 EOM
 
@@ -981,15 +989,16 @@ EOM
     upstream_diff       - show changes between omnios-illumos master and   (ud)
                           upstream (bloody only)
     merge_gate          - merge changes from upstream illumos-gate to new  (mg)
-                          branch.
+                          branch
     pull_request        - push local branch and prepare for pull request   (pr)
-    lx_begin            - begin the upstream lx zone merge process.        (lb)
-    lx_pick             - evaluate the next lx commit.                     (lp)
-    lx_end              - finish the lx zone merge process.                (le)
+    lx_begin            - begin the upstream lx zone merge process         (lb)
+    lx_pick             - evaluate the next lx commit                      (lp)
+    lx_end              - finish the lx zone merge process                 (le)
     lx_abort            - stop the lx merge process and reset everything   (la)
 
     ctfcheck            - compare CTF type data between running system     (ctf)
                           and last built bits
+    cscope              - build cscope database
 EOM
 
 	is guardian && cat << EOM
@@ -1039,6 +1048,7 @@ case $op in
 	la|lx_abort)			is dev && lx_abort || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
 	motd)				is guardian && patch_motd || help ;;
+	cscope)				is dev && build_cscope ;;
 	ctf|ctfcheck)			is dev && ctfcheck ;;
 	ig|igrep)			igrep "$@" ;;
 	og|ogrep)			ogrep "$@" ;;
