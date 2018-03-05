@@ -146,7 +146,9 @@ repo_branch()
 
 reset_illumos_branch()
 {
-	git -C "$illumos_clone" checkout closed/README.ON-BINARIES.i386
+	[ -f "$illumos_clone/closed/README.ON-BINARIES.i386" ] && \
+	    git -C "$illumos_clone" checkout closed/README.ON-BINARIES.i386 \
+	    || true
 }
 
 joyent_commit()
