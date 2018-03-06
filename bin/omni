@@ -240,7 +240,6 @@ upstream_diff()
 	[ "$release" != bloody ] \
 	    && abort "Command not available for $release release"
 
-	check_repo "$illumos_clone" "$branch"
 	(
 		cd "$illumos_clone"
 
