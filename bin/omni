@@ -741,6 +741,21 @@ lx_begin()
 	) || exit 1
 }
 
+lx_stat()
+{
+	num="`wc -l < "${ij}-TODO-commits"`"
+	if [ "$num" -lt 1 ]; then
+		cat << EOM
+
+--- No commits remaining. Run 'lx_end' to finish.
+
+EOM
+		exit 1
+	fi
+	banner "$num lx commit(s) remaining"
+
+}
+
 lx_pick()
 {
 	typeset cpargs="$@"
@@ -754,16 +769,8 @@ lx_pick()
 		cd "$illumos_clone"
 
 		while :; do
-			num="`wc -l < "${ij}-TODO-commits"`"
-			if [ "$num" -lt 1 ]; then
-				cat << EOM
+			lx_stat
 
---- No commits remaining. Run 'lx_end' to finish.
-
-EOM
-				exit 1
-			fi
-			banner "$num commit(s) remaining"
 			hash="`head -1 "${ij}-TODO-commits"`"
 			git show --stat "$hash"
 
@@ -786,6 +793,48 @@ EOM
 			fi
 		done
 	) || exit 1
+}
+
+lx_back()
+{
+	_branch="`repo_branch "$illumos_clone"`"
+	[[ "$_branch" = joyent_merge/* ]] || \
+	    abort "On wrong branch, $_branch (have you run lx_begin?)"
+
+	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
+
+	hash="`git -C "$illumos_clone" log -n1 --pretty=format:%H`"
+	jhash="`tail -1 "${ij}-picked-commits"`"
+
+	[ -n "$jhash" ] || abort "Cannot fetch last commit hash"
+
+	log="`git -C "$illumos_clone" log -n1 --pretty=format:%s $hash`"
+	jlog="`git -C "$illumos_clone" log -n1 --pretty=format:%s $jhash`"
+
+	if [ "$log" != "$jlog" ]; then
+		echo
+		echo "Log message mismatch:"
+		echo "    Local:  $log"
+		echo "    Joyent: $jlog"
+		ask "Proceed anyway?" || exit 1
+	fi
+
+	echo
+	git -C "$illumos_clone" show --stat "$hash"
+	ask "Back-out this commit?" || exit 0
+
+	git -C "$illumos_clone" reset --merge "$hash^" \
+	    || abort "git reset failed."
+
+	sed -i "/$jhash/d" "${ij}-picked-commits"
+	sed -i "/$jhash/d" "${ij}-decided-commits"
+	sed -i "1i\\
+$jhash
+	" "${ij}-TODO-commits"
+
+	echo
+	echo "Commit backed out successfully."
+	lx_stat
 }
 
 lx_end()
@@ -1011,6 +1060,7 @@ EOM
     pull_request        - push local branch and prepare for pull request   (pr)
     lx_begin            - begin the upstream lx zone merge process         (lb)
     lx_pick [opts]      - evaluate the next lx commit                      (lp)
+    lx_back             - revert last last picked commit                   (lk)
     lx_end              - finish the lx zone merge process                 (le)
     lx_abort            - stop the lx merge process and reset everything   (la)
 
@@ -1063,6 +1113,7 @@ case $op in
 	pr|pull_request)		is dev && pull_request "$@" || help ;;
 	lb|lx_begin)			is dev && lx_begin || help ;;
 	lp|lx_pick)			is dev && lx_pick "$@" || help ;;
+	lk|lx_back)			is dev && lx_back || help ;;
 	le|lx_end)			is dev && lx_end || help ;;
 	la|lx_abort)			is dev && lx_abort || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
