@@ -758,7 +758,7 @@ EOM
 
 lx_pick()
 {
-	typeset cpargs="$@"
+	typeset cpargs="$*"
 	_branch="`repo_branch "$illumos_clone"`"
 	[[ "$_branch" = joyent_merge/* ]] || \
 	    abort "On wrong branch, $_branch (have you run lx_begin?)"
@@ -786,6 +786,7 @@ lx_pick()
 			echo "$hash" >> "${ij}-decided-commits"
 			sed -i "/$hash/d" "${ij}-TODO-commits"
 			if [ "$cherry" -eq 1 ]; then
+				# shellcheck disable=SC2086
 				if ! git cherry-pick $cpargs "$hash"; then
 					banner "Problem during cherry-pick."
 					exit 1
@@ -808,8 +809,8 @@ lx_back()
 
 	[ -n "$jhash" ] || abort "Cannot fetch last commit hash"
 
-	log="`git -C "$illumos_clone" log -n1 --pretty=format:%s $hash`"
-	jlog="`git -C "$illumos_clone" log -n1 --pretty=format:%s $jhash`"
+	log="`git -C "$illumos_clone" log -n1 --pretty=format:%s "$hash"`"
+	jlog="`git -C "$illumos_clone" log -n1 --pretty=format:%s "$jhash"`"
 
 	if [ "$log" != "$jlog" ]; then
 		echo
