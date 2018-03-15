@@ -507,6 +507,21 @@ merge_gate()
 	) || exit 1
 }
 
+abort_gate()
+{
+	_branch="`repo_branch "$illumos_clone"`"
+	[[ $_branch = upstream_merge/* ]] || \
+	    abort "On wrong branch, $_branch (is merge in progress?)"
+
+	ask "Stop upstream merge and reset state?" || exit 0
+
+	git -C "$illumos_clone" reset HEAD --hard
+	git -C "$illumos_clone" checkout master
+	git -C "$illumos_clone" branch -D "$_branch"
+
+	banner "Upstream merge aborted and $_branch branch deleted."
+}
+
 # Should use `jq` - add to omnios-extra?
 json_get_key()
 {
@@ -991,6 +1006,7 @@ EOM
                           upstream (bloody only)
     merge_gate          - merge changes from upstream illumos-gate to new  (mg)
                           branch
+    abort_gate          - stop the in-progress gate merge and reset        (ag)
     pull_request        - push local branch and prepare for pull request   (pr)
     lx_begin            - begin the upstream lx zone merge process         (lb)
     lx_pick             - evaluate the next lx commit                      (lp)
@@ -1042,6 +1058,7 @@ case $op in
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
 	ud|upstream_diff)		is dev && upstream_diff "$@" || help ;;
 	mg|merge_gate)			is dev && merge_gate || help ;;
+	ag|abort_gate)			is dev && abort_gate || help ;;
 	pr|pull_request)		is dev && pull_request "$@" || help ;;
 	lb|lx_begin)			is dev && lx_begin || help ;;
 	lp|lx_pick)			is dev && lx_pick || help ;;
