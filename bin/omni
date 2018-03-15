@@ -743,6 +743,7 @@ lx_begin()
 
 lx_pick()
 {
+	typeset cpargs="$@"
 	_branch="`repo_branch "$illumos_clone"`"
 	[[ "$_branch" = joyent_merge/* ]] || \
 	    abort "On wrong branch, $_branch (have you run lx_begin?)"
@@ -778,7 +779,7 @@ EOM
 			echo "$hash" >> "${ij}-decided-commits"
 			sed -i "/$hash/d" "${ij}-TODO-commits"
 			if [ "$cherry" -eq 1 ]; then
-				if ! git cherry-pick "$hash"; then
+				if ! git cherry-pick $cpargs "$hash"; then
 					banner "Problem during cherry-pick."
 					exit 1
 				fi
@@ -1009,7 +1010,7 @@ EOM
     abort_gate          - stop the in-progress gate merge and reset        (ag)
     pull_request        - push local branch and prepare for pull request   (pr)
     lx_begin            - begin the upstream lx zone merge process         (lb)
-    lx_pick             - evaluate the next lx commit                      (lp)
+    lx_pick [opts]      - evaluate the next lx commit                      (lp)
     lx_end              - finish the lx zone merge process                 (le)
     lx_abort            - stop the lx merge process and reset everything   (la)
 
@@ -1061,7 +1062,7 @@ case $op in
 	ag|abort_gate)			is dev && abort_gate || help ;;
 	pr|pull_request)		is dev && pull_request "$@" || help ;;
 	lb|lx_begin)			is dev && lx_begin || help ;;
-	lp|lx_pick)			is dev && lx_pick || help ;;
+	lp|lx_pick)			is dev && lx_pick "$@" || help ;;
 	le|lx_end)			is dev && lx_end || help ;;
 	la|lx_abort)			is dev && lx_abort || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
