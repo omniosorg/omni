@@ -72,6 +72,11 @@ fi
 
 export ij="$lxdata_clone/ij"
 
+c_banner="`tput setaf 6`"
+c_highlight="`tput setaf 2`"
+c_error="`tput setaf 1`"
+c_reset="`tput sgr0`"
+
 show_config()
 {
 	cat << EOM
@@ -100,13 +105,15 @@ EOM
 banner()
 {
 	echo
-	echo "*** $*"
+	echo "$c_banner*** $*$c_reset"
 	echo
 }
 
 abort()
 {
-	banner "$@"
+	echo
+	echo "$c_error*** $*$c_reset"
+	echo
 	exit 1
 }
 
@@ -123,12 +130,28 @@ ask()
 {
 	typeset a=$answer
 
-	echo "$* (y/n) \\c"
-	[ -n "$a" ] && echo $a
-	while [[ "$a" != [yYnN] ]]; do
+	echo "$c_highlight$* (y/n) $c_reset\\c"
+	[ -n "$a" ] && echo "$c_error$a$c_reset"
+	while [[ "$a" != [yn] ]]; do
 		read -r a
+		a="`echo "$a" | tr '[A-Z]' '[a-z]'`"
 	done
-	[[ "$a" = [yY] ]]
+	[ "$a" = "y" ]
+}
+
+response()
+{
+	typeset a=$answer
+	typeset msg="$1"
+	typeset opts="$2"
+
+	echo "$c_highlight$msg \\c$reset" 1>&2
+	[ -n "$a" ] && echo "$c_error$a$c_reset" 1>&2
+	while [[ "$a" != [$opts] ]]; do
+		read -r a
+		a="`echo "$a" | tr '[A-Z]' '[a-z]'`"
+	done
+	echo $a
 }
 
 anything_to_push()
@@ -164,8 +187,7 @@ check_repo()
 	typeset branch="${2:?}"
 
 	if [ -z "$repo" ]; then
-		echo "Repository path is not set in $CFGFILE"
-		exit 1
+		abort "Repository path is not set in $CFGFILE"
 	fi
 
 	banner "Checking repository $repo ($branch)"
@@ -173,8 +195,7 @@ check_repo()
 	typeset actual_branch="`repo_branch "$repo"`"
 
 	if [ "$actual_branch" != "$branch" ]; then
-		echo "$repo is not on $branch branch ($actual_branch)"
-		exit 1
+		abort "$repo is not on $branch branch ($actual_branch)"
 	fi
 }
 
@@ -764,21 +785,28 @@ lx_begin()
 			check_repo "$illumos_clone" "$_branch"
 		fi
 	) || exit 1
+	lx_stat
 }
 
 lx_stat()
 {
-	num="`wc -l < "${ij}-TODO-commits"`"
-	if [ "$num" -lt 1 ]; then
-		cat << EOM
+	typeset tc="`wc -l < "${ij}-TODO-commits"`"
+	typeset pc="`wc -l < /dev/null`"
+	typeset sc="`wc -l < /dev/null`"
+	[ -f "${ij}-picked-commits" ] && pc="`wc -l < "${ij}-picked-commits"`"
+	[ -f "${ij}-skipped-commits" ] && sc="`wc -l < "${ij}-skipped-commits"`"
 
---- No commits remaining. Run 'lx_end' to finish.
-
-EOM
+	if [ "$tc" -lt 1 ]; then
+		banner "--- No commits remaining. Run 'lx_end' to finish."
 		exit 1
 	fi
-	banner "$num lx commit(s) remaining"
-
+	cat <<- EOM
+		$c_banner
+		$tc lx commit(s) remaining
+		$pc lx commit(s) picked
+		$sc lx commit(s) skipped
+		$c_reset
+	EOM
 }
 
 lx_pick()
@@ -797,25 +825,44 @@ lx_pick()
 			lx_stat
 
 			hash="`head -1 "${ij}-TODO-commits"`"
-			git show --stat "$hash"
+			os="`git log -n1 --format=%s "$hash" \
+			    | awk '{print $1}'`"
 
-			echo
+			cherry=
+			while :; do
+				git show --stat "$hash"
 
-			if ask "Cherry pick this commit?"; then
-				echo "$hash" >> "${ij}-picked-commits"
-				cherry=1
-			else
-				echo "$hash" >> "${ij}-skipped-commits"
-				cherry=0
-			fi
+				echo
+				echo "        https://smartos.org/bugview/$os"
+				echo
+
+				r="`response 'Cherry pick this commit? (y[es]/n[o]/s[how]/a[bort])' 'ynsa'`"
+				case $r in
+				    a)
+					abort "Exiting at user request."
+					;;
+				    s)
+					echo "Showing commit..."
+					git show "$hash"
+					;;
+				    y)
+					echo "$hash" >> "${ij}-picked-commits"
+					cherry=1
+					break
+					;;
+				    n)
+					echo "$hash" >> "${ij}-skipped-commits"
+					cherry=0
+					break
+					;;
+				esac
+			done
 			echo "$hash" >> "${ij}-decided-commits"
 			sed -i "/$hash/d" "${ij}-TODO-commits"
 			if [ "$cherry" -eq 1 ]; then
 				# shellcheck disable=SC2086
-				if ! git cherry-pick $cpargs "$hash"; then
-					banner "Problem during cherry-pick."
-					exit 1
-				fi
+				git cherry-pick $cpargs "$hash" \
+				    || abort "Problem during cherry-pick."
 			fi
 		done
 	) || exit 1
@@ -1089,6 +1136,7 @@ EOM
     lx_back             - revert last last picked commit                   (lk)
     lx_end              - finish the lx zone merge process                 (le)
     lx_abort            - stop the lx merge process and reset everything   (la)
+    lx_stat             - show current lx merge status                     (ls)
 
     ctfcheck            - compare CTF type data between running system     (ctf)
                           and last built bits
@@ -1142,6 +1190,7 @@ case $op in
 	lk|lx_back)			is dev && lx_back || help ;;
 	le|lx_end)			is dev && lx_end || help ;;
 	la|lx_abort)			is dev && lx_abort || help ;;
+	ls|lx_stat)			is dev && lx_stat || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
 	motd)				is guardian && patch_motd || help ;;
 	cscope)				is dev && build_cscope ;;
