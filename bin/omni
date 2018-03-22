@@ -134,7 +134,7 @@ ask()
 	[ -n "$a" ] && echo "$c_error$a$c_reset"
 	while [[ "$a" != [yn] ]]; do
 		read -r a
-		a="`echo "$a" | tr '[A-Z]' '[a-z]'`"
+		a="`echo "$a" | tr '[:upper:]' '[:lower:]'`"
 	done
 	[ "$a" = "y" ]
 }
@@ -143,15 +143,16 @@ response()
 {
 	typeset a=$answer
 	typeset msg="$1"
+	# shellcheck disable=SC2034
 	typeset opts="$2"
 
-	echo "$c_highlight$msg \\c$reset" 1>&2
+	echo "$c_highlight$msg \\c$c_reset" 1>&2
 	[ -n "$a" ] && echo "$c_error$a$c_reset" 1>&2
 	while [[ "$a" != [$opts] ]]; do
 		read -r a
-		a="`echo "$a" | tr '[A-Z]' '[a-z]'`"
+		a="`echo "$a" | tr '[:upper:]' '[:lower:]'`"
 	done
-	echo $a
+	echo "$a"
 }
 
 anything_to_push()
