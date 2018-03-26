@@ -307,7 +307,7 @@ upstream_diff()
 		    "$hash..$head" \
 		    | ud_process "$arg" https://smartos.org/bugview
 
-		echo
+		echo "$c_reset"
 	)
 }
 
