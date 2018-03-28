@@ -797,17 +797,17 @@ lx_stat()
 	[ -f "${ij}-picked-commits" ] && pc="`wc -l < "${ij}-picked-commits"`"
 	[ -f "${ij}-skipped-commits" ] && sc="`wc -l < "${ij}-skipped-commits"`"
 
-	if [ "$tc" -lt 1 ]; then
-		banner "--- No commits remaining. Run 'lx_end' to finish."
-		exit 1
-	fi
 	cat <<- EOM
 		$c_banner
 		$tc lx commit(s) remaining
 		$pc lx commit(s) picked
-		$sc lx commit(s) skipped
-		$c_reset
+		$sc lx commit(s) skipped $c_reset
 	EOM
+
+	if [ "$tc" -lt 1 ]; then
+		banner "--- No commits remaining. Run 'lx_end' to finish."
+		exit 1
+	fi
 }
 
 lx_pick()
