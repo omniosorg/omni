@@ -69,6 +69,12 @@ fi
 : "${answer:=}"
 : "${release:=unknown}"
 : "${gituser:=unknown}"
+if [[ "$release" = r* ]]; then
+	relnum="${release:1}"
+else
+	relnum="`grep ONNV_BUILDNUM= "$illumos_env" | cut -d= -f2`"
+	[ -z "$relnum" ] && relnum=151999
+fi
 
 export ij="$lxdata_clone/ij"
 
@@ -84,7 +90,7 @@ show_config()
 Current configuration ($CFGFILE):
 
     GitHub User:          $gituser
-    Release:              $release
+    Release:              $release ($relnum)
     Branch:               $branch
     Privilege Escalation: $PFEXEC
 
@@ -415,14 +421,19 @@ build_media()
 
 	banner "Building media from $PKGURL..."
 
-	zfs list $kayak_image >/dev/null 2>&1 && \
-	    $PFEXEC zfs destroy -R $kayak_image
-
 	(
 		cd "$kayak_clone"
-		$PFEXEC gmake install-usb clean \
-		    PKGURL="$PKGURL" \
-		    PREBUILT_ILLUMOS="$illumos_clone"
+		if [ "$relnum" -ge 151025 ]; then
+			$PFEXEC gmake zfsdestroy install-usb clean \
+			    PKGURL="$PKGURL" \
+			    PREBUILT_ILLUMOS="$illumos_clone"
+		else
+			zfs list $kayak_image >/dev/null 2>&1 && \
+			    $PFEXEC zfs destroy -R $kayak_image
+			$PFEXEC gmake install-usb clean \
+			    PKGURL="$PKGURL" \
+			    PREBUILT_ILLUMOS="$illumos_clone"
+		fi
 	)
 }
 
