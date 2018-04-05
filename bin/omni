@@ -759,9 +759,8 @@ lx_begin()
 		cd "$lxdata_clone"
 		git pull
 
-		[ -f ij-ALL-commits ] && \
+		[ -f "${ij}-ALL-commits" ] && \
 		    abort "An LX merge session is in progress, aborting."
-
 
 		check_repo "$illumos_clone" "$branch"
 		cd "$illumos_clone"
@@ -775,8 +774,7 @@ lx_begin()
 		git log --reverse --no-merges --format=%H "`joyent_commit`.." \
 		    > "${ij}-ALL-commits"
 
-		echo "    Found  `wc -l < "$lxdata_clone/ij-ALL-commits"`"\
-		    "commit(s)"
+		echo "    Found  `wc -l < "${ij}-ALL-commits"` commit(s)"
 
 		echo "--- Filtering out gate commits"
 
@@ -802,6 +800,8 @@ lx_begin()
 
 lx_stat()
 {
+	[ -f "${ij}-ALL-commits" ] || abort "No LX merge session in progress"
+
 	typeset tc="`wc -l < "${ij}-TODO-commits"`"
 	typeset pc="`wc -l < /dev/null`"
 	typeset sc="`wc -l < /dev/null`"
@@ -962,10 +962,17 @@ lx_end()
 		    README.OmniOS
 
 		banner "The following commits have been picked."
-		git log --reverse "master..$_branch"
+		git log --reverse --format=oneline "master..$_branch" \
+		    | sed 's/Reviewed.*//' | cut -d\  -f2-
+
+		banner "The following commits have been skipped."
+		cat "${ij}-skipped-commits" | while read -r f; do
+			git show --stat --format=oneline "$f" | head -1 \
+			    | sed 's/Reviewed.*//' | cut -d\  -f2-
+		done
+
 		echo
 	)
-
 }
 
 lx_abort()
