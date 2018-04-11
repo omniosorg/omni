@@ -944,6 +944,7 @@ lx_end()
 		rm -f ij-TODO-commits	# Now empty
 		rm -f ij-GATE-commits
 		mv ij-* "$arc"
+		ij="$lxdata_clone/$arc/ij"
 
 		git add "$arc"
 		git commit -m "LX Port data for $_branch" "$arc"
