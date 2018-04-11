@@ -944,7 +944,7 @@ lx_end()
 		rm -f ij-TODO-commits	# Now empty
 		rm -f ij-GATE-commits
 		mv ij-* "$arc"
-		ij="$lxdata_clone/$arc/ij"
+		aij="$lxdata_clone/$arc/ij"
 
 		git add "$arc"
 		git commit -m "LX Port data for $_branch" "$arc"
@@ -967,7 +967,7 @@ lx_end()
 		    | sed 's/Reviewed.*//' | cut -d\  -f2-
 
 		banner "The following commits have been skipped."
-		cat "${ij}-skipped-commits" | while read -r f; do
+		cat "${aij}-skipped-commits" | while read -r f; do
 			git show --stat --format=oneline "$f" | head -1 \
 			    | sed 's/Reviewed.*//' | cut -d\  -f2-
 		done
