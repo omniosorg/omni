@@ -1050,6 +1050,48 @@ ctfcheck()
 	done
 }
 
+fnfind_obj()
+{
+	typeset object="$1"
+	typeset token="$2"
+
+	typeset sobject="`echo "$object" | sed 's^.*/root_i386[^/]*^^g'`"
+
+	if [ -d "$object" ]; then
+		find "$object" -type f -perm -+x | while read -r f; do
+			fnfind_obj "$f" "$token"
+		done
+	elif [ -f "$object" ]; then
+		if nm "$object" | egrep -s "$token"; then
+			echo "---> $sobject"
+			pkg search -lHo pkg.name "path:$sobject" \
+			    | sed 's/^/     /'
+		fi
+	else
+		abort "Missing object $object"
+	fi
+}
+
+fnfind()
+{
+	typeset token="$1"
+
+	[ -n "$token" ] || abort "Syntax: omni fnfind <function>"
+
+	proto="$illumos_clone/proto/root_i386-nd"
+	[ -d "$proto" ] || abort "No proto root found @ $proto"
+
+	for o in \
+		kernel/amd64/genunix \
+		platform/i86pc/kernel/amd64/unix \
+		kernel/drv/amd64 \
+		kernel/misc/amd64 \
+		usr/kernel/drv/amd64 \
+	; do
+		fnfind_obj "$proto/$o" "$token"
+	done
+}
+
 patch_motd()
 {
 	tmpdir="`mktemp -d`"
@@ -1171,6 +1213,7 @@ EOM
 EOM
 
 	cat << EOM
+    fnfind <pattern>    - Find the object that contains matching functions (fnf)
     igrep <pattern>     - Grep the illumos-omnios git log                  (ig)
     ogrep <pattern>     - Grep the omnios-build git log                    (og)
     version             - Display program version ($OMNIVER)
@@ -1215,6 +1258,7 @@ case $op in
 	motd)				is guardian && patch_motd || help ;;
 	cscope)				is dev && build_cscope ;;
 	ctf|ctfcheck)			is dev && ctfcheck ;;
+	fnf|fnfind)			fnfind "$@" ;;
 	ig|igrep)			igrep "$@" ;;
 	og|ogrep)			ogrep "$@" ;;
 	ver|version)			version ;;
