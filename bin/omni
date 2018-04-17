@@ -152,7 +152,7 @@ response()
 	# shellcheck disable=SC2034
 	typeset opts="$2"
 
-	echo "$c_highlight$msg \\c$c_reset" 1>&2
+	echo "$c_highlight$msg $c_reset\\c" 1>&2
 	[ -n "$a" ] && echo "$c_error$a$c_reset" 1>&2
 	while [[ "$a" != [$opts] ]]; do
 		read -r a
@@ -618,6 +618,7 @@ create_pull_request()
 	typeset sbranch="$6"
 	typeset title="$7"
 	typeset bodyfile="$8"
+	typeset patch="$9"
 
 	perl -i -p -e '
 		s/\n/\\n/g;
@@ -654,27 +655,19 @@ create_pull_request()
 	number="`basename "$prurl"`"
 	echo "PR $number created, assigning label."
 
-	# Assign label via the issues API
-
-	cat <<- EOM > "$data"
-		{
-			"labels": [
-				"upstream-merge",
-				"on-hold"
-			]
-		}
-	EOM
-
-	op=`github_request "$suser:$token" \
-	    "repos/$duser/$drepo/issues/$number" "$data" PATCH`
-	rm -f "$op"
+	# Assign additional attributes via the issues API
+	if [ -n "$patch" -a -f "$patch" ]; then
+		op=`github_request "$suser:$token" \
+		    "repos/$duser/$drepo/issues/$number" "$patch" PATCH`
+		rm -f "$op"
+	fi
 
 	echo "Finished, the PR can be found at:"
 	echo
 	echo "    $prurl"
 }
 
-pull_request()
+illumos_pull_request()
 {
 	_branch="`repo_branch "$illumos_clone"`"
 	typeset force
@@ -697,10 +690,10 @@ pull_request()
 	prbase="https://github.com/omniosorg/illumos-omnios/compare"
 	prbranch="$branch...$gituser:$_branch?expand=1"
 
+	echo
 	token="`git config user.token`"
 	if [ -z "$token" ] || ! ask "Create PR automatically on GitHub?"; then
 		cat <<- EOM
-
 			Local branch $_branch has been pushed to github.
 			Visit the following URL to create a pull-request:
 
@@ -742,14 +735,106 @@ $uname
 \`\`\`
 EOM
 
-	# token duser drepo dbranch suser sbranch title bodyfile
+	patch=`mktemp`
+	cat <<- EOM > "$patch"
+		{
+			"labels": [
+				"upstream-merge",
+				"on-hold"
+			]
+		}
+	EOM
+
+	# token duser drepo dbranch suser sbranch title bodyfile patch
 	create_pull_request "$token" \
 		omniosorg illumos-omnios "$branch" \
 		"$gituser" "$_branch" \
 		"Upstream merge $_branch" \
-		"$prdata"
+		"$prdata" "$patch"
 
-	rm -f "$prdata"
+	rm -f "$prdata" "$patch"
+}
+
+omnios_pull_request()
+{
+	_branch="`repo_branch "$omnios_clone"`"
+
+	[ "$_branch" = "$branch" ] && abort "Not on suitable branch."
+
+	ask "Push local branch $_branch ready for pull-request?" || exit 0
+
+	( cd "$omnios_clone" && ./tools/test ) || abort "Test failure"
+
+	if [ -n "`git -C "$omnios_clone" diff --name-only`" ]; then
+		banner "Uncommitted files found"
+		git -C "$omnios_clone" status --short --branch -unormal
+		echo
+		ask "Proceed?" || abort "PR aborted."
+	fi
+
+	git -C "$omnios_clone" push -u origin "$_branch"
+	commit_msg="`git -C "$omnios_clone" log -n1 --format=%s`"
+	git -C "$omnios_clone" checkout "$branch"
+
+	prbase="https://github.com/omniosorg/omnios-build/compare"
+	prbranch="$branch...$gituser:$_branch?expand=1"
+
+	echo
+	token="`git config user.token`"
+	if [ -z "$token" ] || ! ask "Create PR automatically on GitHub?"; then
+		cat <<- EOM
+			Local branch $_branch has been pushed to github.
+			Visit the following URL to create a pull-request:
+
+			    $prbase/$prbranch
+
+		EOM
+		return
+	fi
+
+	# Automate creation of the pull-request (experimental)
+	# Requires that your 2FA token is stored in your git config
+	# as user.token.
+	#     git config [--global] --add user.token <token>
+
+	prdata="`mktemp`"
+	[ "$branch" = "master" ] || commit_msg="$commit_msg ($branch)"
+	echo "$commit_msg" > "$prdata"
+
+	r=
+	while [ "$r" != 'y' ]; do
+		banner "`cat "$prdata"`"
+		r="`response 'Proceed? (y[es]/e[dit]/a[bort])' 'yea'`"
+		case "$r" in
+			e) "${EDITOR:-vi}" "$prdata" ;;
+			a) abort "PR aborted." ;;
+		esac
+	done
+
+	patch=`mktemp`
+	cat <<- EOM > "$patch"
+		{
+			"labels": [
+				"package update"
+	EOM
+	if [ "$branch" = "master" ]; then
+		ask "Backport to-do?" && echo ',"backport-todo"' >> "$patch"
+	else
+		ask "Backport?" && echo ',"backport-PR"' >> "$patch"
+	fi
+	cat <<-EOM >> "$patch"
+			]
+		}
+	EOM
+
+	# token duser drepo dbranch suser sbranch title bodyfile patch
+	create_pull_request "$token" \
+		omniosorg omnios-build "$branch" \
+		"$gituser" "$_branch" \
+		"$commit_msg" \
+		"$prdata" "$patch"
+
+	rm -f "$prdata" "$patch"
 }
 
 lx_begin()
@@ -1193,6 +1278,7 @@ EOM
                           branch
     abort_gate          - stop the in-progress gate merge and reset        (ag)
     pull_request        - push local branch and prepare for pull request   (pr)
+    omnios_pull_request - push local branch and prepare for pull request   (opr)
     lx_begin            - begin the upstream lx zone merge process         (lb)
     lx_pick [opts]      - evaluate the next lx commit                      (lp)
     lx_back             - revert last last picked commit                   (lk)
@@ -1247,7 +1333,10 @@ case $op in
 	ud|upstream_diff)		is dev && upstream_diff "$@" || help ;;
 	mg|merge_gate)			is dev && merge_gate || help ;;
 	ag|abort_gate)			is dev && abort_gate || help ;;
-	pr|pull_request)		is dev && pull_request "$@" || help ;;
+	pr|pull_request)		is dev && illumos_pull_request "$@" \
+					    || help ;;
+	opr|omnios_pull_request)	is dev && omnios_pull_request "$@" \
+					    || help ;;
 	lb|lx_begin)			is dev && lx_begin || help ;;
 	lp|lx_pick)			is dev && lx_pick "$@" || help ;;
 	lk|lx_back)			is dev && lx_back || help ;;
