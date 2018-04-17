@@ -161,6 +161,12 @@ response()
 	echo "$a"
 }
 
+shortener='http://tny.im/yourls-api.php?action=shorturl&format=simple&url='
+shorten_url()
+{
+	wget -q -O - "$shortener$*"
+}
+
 anything_to_push()
 {
 	[ "$gituser" = omniosorg ] && return 1
@@ -697,7 +703,7 @@ illumos_pull_request()
 			Local branch $_branch has been pushed to github.
 			Visit the following URL to create a pull-request:
 
-			    $prbase/$prbranch
+			    `shorten_url "$prbase/$prbranch"`
 
 		EOM
 		return
@@ -786,7 +792,7 @@ omnios_pull_request()
 			Local branch $_branch has been pushed to github.
 			Visit the following URL to create a pull-request:
 
-			    $prbase/$prbranch
+			    `shorten_url "$prbase/$prbranch"`
 
 		EOM
 		return
