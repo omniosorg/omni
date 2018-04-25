@@ -1185,9 +1185,12 @@ fnfind()
 
 patch_motd()
 {
+	PKGURL="${1:-file://$omnios_buildrepo}"
+
+	banner "Pulling SUNWcs from $PKGURL..."
+
 	tmpdir="`mktemp -d`"
-	pkgrecv -s "https://pkg.omniosce.org/$release/staging" \
-	    -d "$tmpdir" --raw -m latest SUNWcs
+	pkgrecv -s "$PKGURL" -d "$tmpdir" --raw -m latest SUNWcs
 	cd "$tmpdir/SUNWcs/"* || exit 1
 	hash="`grep motd manifest | grep '=false$' | awk '{print $2}'`"
 	[ -f "$hash" ] || abort "No file called $hash"
@@ -1300,7 +1303,7 @@ EOM
 	is guardian && cat << EOM
 
     push_upstreams      - Push upstream branches to github/omniosorg       (pu)
-    motd                - Manually change /etc/motd in SUNWcs
+    motd [URL]          - Manually change /etc/motd in SUNWcs
 
 EOM
 
@@ -1350,7 +1353,8 @@ case $op in
 	la|lx_abort)			is dev && lx_abort || help ;;
 	ls|lx_stat)			is dev && lx_stat || help ;;
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
-	motd)				is guardian && patch_motd || help ;;
+	motd)				is guardian && patch_motd "$@" \
+					    || help ;;
 	cscope)				is dev && build_cscope ;;
 	ctf|ctfcheck)			is dev && ctfcheck ;;
 	fnf|fnfind)			fnfind "$@" ;;
