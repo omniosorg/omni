@@ -1,13 +1,6 @@
 sudo: false
 language: bash
 
-addons:
-  apt:
-    sources:
-    - debian-sid
-    packages:
-    - shellcheck
-
 env:
   # SC2006: Use $(..) instead of legacy `..`.
   # SC2166: Prefer [ p ] && [ q ] as [ p -a q ] is not well defined.
