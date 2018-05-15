@@ -817,21 +817,26 @@ omnios_pull_request()
 		esac
 	done
 
-	patch=`mktemp`
-	cat <<- EOM > "$patch"
+	if ask "Labels?"; then
+		patch=`mktemp`
+		cat <<- EOM > "$patch"
 		{
 			"labels": [
 				"package update"
-	EOM
-	if [ "$branch" = "master" ]; then
-		ask "Backport to-do?" && echo ',"backport-todo"' >> "$patch"
-	else
-		ask "Backport?" && echo ',"backport-PR"' >> "$patch"
-	fi
-	cat <<-EOM >> "$patch"
+		EOM
+		if [ "$branch" = "master" ]; then
+			ask "Backport to-do?" && echo ',"backport-todo"' \
+			    >> "$patch"
+		else
+			ask "Backport?" && echo ',"backport-PR"' >> "$patch"
+		fi
+		cat <<-EOM >> "$patch"
 			]
 		}
-	EOM
+		EOM
+	else
+		patch=
+	fi
 
 	# token duser drepo dbranch suser sbranch title bodyfile patch
 	create_pull_request "$token" \
