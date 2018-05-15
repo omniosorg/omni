@@ -1177,7 +1177,7 @@ fnfind()
 	[ -n "$token" ] || abort "Syntax: omni fnfind <function>"
 
 	proto="$illumos_clone/proto/root_i386-nd"
-	[ -d "$proto" ] || abort "No proto root found @ $proto"
+	[ -d "$proto" ] || proto=
 
 	for o in \
 		kernel/amd64/genunix \
