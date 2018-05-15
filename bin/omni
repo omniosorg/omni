@@ -969,8 +969,10 @@ lx_pick()
 			sed -i "/$hash/d" "${ij}-TODO-commits"
 			if [ "$cherry" -eq 1 ]; then
 				# shellcheck disable=SC2086
-				git cherry-pick $cpargs "$hash" \
-				    || abort "Problem during cherry-pick."
+				if ! git cherry-pick $cpargs "$hash"; then
+					git diff --name-only --diff-filter=UXB
+					abort "Problem during cherry-pick."
+				fi
 			fi
 		done
 	) || exit 1
