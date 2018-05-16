@@ -78,10 +78,13 @@ fi
 
 export ij="$lxdata_clone/ij"
 
+# Lack of colour support in the terminal is not fatal
+set +e
 c_banner="`tput setaf 6`"
 c_highlight="`tput setaf 2`"
 c_error="`tput setaf 1`"
 c_reset="`tput sgr0`"
+set -e
 
 show_config()
 {
