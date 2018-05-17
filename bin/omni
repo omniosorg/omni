@@ -381,6 +381,15 @@ build_illumos()
 	typeset benv="`basename "$env"`"
 	banner "Starting illumos-omnios $release build... ($benv)"
 
+	typeset tver="`grep 'ONNV_BUILDNUM=' \
+	    "$illumos_clone/usr/src/tools/env/omnios-illumos-omnios.sh" \
+	    | cut -d= -f2`"
+
+	if [ "$tver" != "$relnum" ]; then
+		banner "Release version mismatch - env=$relnum, src=$tver"
+		ask 'Continue?' || exit 0
+	fi
+
 	# Remove any stale log file
 	export logf="$illumos_clone/log/nightly.log"
 	[ -f "$logf" ] && rm -f "$logf"
@@ -1324,7 +1333,7 @@ EOM
     version             - Display program version ($OMNIVER)
 
 NB: Ops can be abbreviated to the term shown in brackets, e.g. 'omni uo'
-	
+
 EOM
 }
 
