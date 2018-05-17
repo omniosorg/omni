@@ -941,7 +941,7 @@ lx_pick()
 
 			cherry=
 			while :; do
-				git show --stat "$hash"
+				git show --compact-summary "$hash"
 
 				echo
 				echo "        https://smartos.org/bugview/$os"
@@ -1006,7 +1006,7 @@ lx_back()
 	fi
 
 	echo
-	git -C "$illumos_clone" show --stat "$hash"
+	git -C "$illumos_clone" show --compact-summary "$hash"
 	ask "Back-out this commit?" || exit 0
 
 	git -C "$illumos_clone" reset --merge "$hash^" \
@@ -1069,8 +1069,8 @@ lx_end()
 
 		banner "The following commits have been skipped."
 		cat "${aij}-skipped-commits" | while read -r f; do
-			git show --stat --format=oneline "$f" | head -1 \
-			    | sed 's/Reviewed.*//' | cut -d\  -f2-
+			git show --compact-summary --format=oneline "$f" \
+			    | head -1 | sed 's/Reviewed.*//' | cut -d\  -f2-
 		done
 
 		echo
