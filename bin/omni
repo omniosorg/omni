@@ -312,7 +312,7 @@ upstream_diff()
 
 		hash="`joyent_commit`"
 		head="`git rev-parse upstream_joyent`"
-		echo
+		echo "$c_reset"
 		echo "JOYENT ($hash..):"
 		echo
 		git -c color.ui=always log \
