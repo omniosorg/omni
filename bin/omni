@@ -381,13 +381,16 @@ build_illumos()
 	typeset benv="`basename "$env"`"
 	banner "Starting illumos-omnios $release build... ($benv)"
 
-	typeset tver="`grep 'ONNV_BUILDNUM=' \
-	    "$illumos_clone/usr/src/tools/env/omnios-illumos-omnios.sh" \
-	    | cut -d= -f2`"
+	if [ -f "$illumos_clone/usr/src/tools/env/omnios-illumos-omnios.sh" ]
+	then
+		typeset tver="`grep 'ONNV_BUILDNUM=' \
+		    "$illumos_clone/usr/src/tools/env/omnios-illumos-omnios.sh"\
+		    | cut -d= -f2`"
 
-	if [ "$tver" != "$relnum" ]; then
-		banner "Release version mismatch - env=$relnum, src=$tver"
-		ask 'Continue?' || exit 0
+		if [ "$tver" != "$relnum" ]; then
+			banner "Version mismatch - env=$relnum, src=$tver"
+			ask 'Continue?' || exit 0
+		fi
 	fi
 
 	# Remove any stale log file
@@ -982,6 +985,9 @@ lx_pick()
 			if [ "$cherry" -eq 1 ]; then
 				# shellcheck disable=SC2086
 				if ! git cherry-pick $cpargs "$hash"; then
+					echo
+					echo "Conflicting files:"
+					echo
 					git diff --name-only --diff-filter=UXB
 					abort "Problem during cherry-pick."
 				fi
