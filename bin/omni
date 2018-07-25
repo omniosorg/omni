@@ -250,6 +250,8 @@ update_illumos_stable()
 		cd "$illumos_clone"
 		reset_illumos_branch
 		git pull upstream "$branch" --no-edit --tags
+		git fetch origin
+		git remote prune origin
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
