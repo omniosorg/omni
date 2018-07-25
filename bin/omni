@@ -1210,15 +1210,28 @@ fnfind()
 	done
 }
 
-patch_motd()
+expand_pkg()
 {
+	typeset pkg="${1:?pkg}"; shift
 	PKGURL="${1:-file://$omnios_buildrepo}"
 
-	banner "Pulling SUNWcs from $PKGURL..."
+	banner "Pulling $pkg from $PKGURL..." >> /dev/stderr
 
-	tmpdir="`mktemp -d`"
-	pkgrecv -s "$PKGURL" -d "$tmpdir" --raw -m latest SUNWcs
-	cd "$tmpdir/SUNWcs/"* || exit 1
+	typeset tmpdir="`mktemp -d`"
+	pkgrecv -s "$PKGURL" -d "$tmpdir" --raw -m latest "$pkg" >> /dev/stderr
+	for d in "$tmpdir/$pkg/"*; do
+		[ -d "$d" ] || continue
+		echo "$d"
+		break
+	done
+}
+
+patch_motd()
+{
+	typeset tmpdir="`expand_pkg SUNWcs "$@"`"
+
+	cd "$tmpdir" || exit 1
+
 	hash="`grep motd manifest | grep '=false$' | awk '{print $2}'`"
 	[ -f "$hash" ] || abort "No file called $hash"
 	cp "$hash" motd
@@ -1325,6 +1338,7 @@ EOM
     ctfcheck            - compare CTF type data between running system     (ctf)
                           and last built bits
     cscope              - build cscope database
+    expand_pkg          - Fetch and expand a pckage from an IPS reposntory (ep)
 EOM
 
 	is guardian && cat << EOM
@@ -1382,6 +1396,7 @@ case $op in
 	pu|push_upstreams)		is guardian && push_upstreams || help ;;
 	motd)				is guardian && patch_motd "$@" \
 					    || help ;;
+	expand_pkg|ep)			is dev && expand_pkg "$@" || help ;;
 	cscope)				is dev && build_cscope ;;
 	ctf|ctfcheck)			is dev && ctfcheck ;;
 	fnf|fnfind)			fnfind "$@" ;;
