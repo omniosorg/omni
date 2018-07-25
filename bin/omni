@@ -695,6 +695,7 @@ illumos_pull_request()
 	_branch="`repo_branch "$illumos_clone"`"
 	typeset force
 	[ "$1" = "-f" ] && force=1 || force=0
+	typeset type="${1:-upstream}"
 
 	# This is just a sanity check to look for a branch name ending in
 	# yyyymmddnn
@@ -737,8 +738,13 @@ illumos_pull_request()
 		uname="_TBC_"
 	fi
 
+	typeset tag="Ad-hoc"
+
 	prdata=`mktemp`
-	cat << EOM > "$prdata"
+	case "$type" in
+		upstream)
+			tag="Upstream merge"
+			cat << EOM > "$prdata"
 Weekly upstream for $_branch
 
 ## Backports
@@ -750,7 +756,19 @@ _TBC_
 \`\`\`
 $uname
 \`\`\`
+EOM
+			;;
+		backport)
+			tag="Backport"
+			cat << EOM > "$prdata"
+Backport(s) for $_branch
+EOM
+			;;
+		*)
+			;;
+	esac
 
+	cat << EOM >> "$prdata"
 ## mail_msg
 
 \`\`\`
@@ -758,21 +776,23 @@ $uname
 \`\`\`
 EOM
 
-	patch=`mktemp`
-	cat <<- EOM > "$patch"
-		{
-			"labels": [
-				"upstream-merge",
-				"on-hold"
-			]
-		}
-	EOM
+	if [ "$type" = "upstream" ]; then
+		patch=`mktemp`
+		cat <<- EOM > "$patch"
+			{
+				"labels": [
+					"upstream-merge",
+					"on-hold"
+				]
+			}
+		EOM
+	fi
 
 	# token duser drepo dbranch suser sbranch title bodyfile patch
 	create_pull_request "$token" \
 		omniosorg illumos-omnios "$branch" \
 		"$gituser" "$_branch" \
-		"Upstream merge $_branch" \
+		"$tag $_branch" \
 		"$prdata" "$patch"
 
 	rm -f "$prdata" "$patch"
