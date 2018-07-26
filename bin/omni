@@ -80,10 +80,10 @@ export ij="$lxdata_clone/ij"
 
 # Lack of colour support in the terminal is not fatal
 set +e
-c_banner="`tput setaf 6`"
-c_highlight="`tput setaf 2`"
-c_error="`tput setaf 1`"
-c_reset="`tput sgr0`"
+c_banner="`/usr/gnu/bin/tput setaf 6`"
+c_highlight="`/usr/gnu/bin/tput setaf 2`"
+c_error="`/usr/gnu/bin/tput setaf 1`"
+c_reset="`/usr/gnu/bin/tput sgr0`"
 set -e
 
 show_config()
