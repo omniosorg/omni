@@ -971,6 +971,8 @@ lx_pick()
 	[[ "$_branch" = joyent_merge/* ]] || \
 	    abort "On wrong branch, $_branch (have you run lx_begin?)"
 
+	[ -n "$cpargs" ] && cpargs=-e
+
 	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
 
 	(
