@@ -919,7 +919,7 @@ lx_begin()
 
 		echo "--- Filtering out gate commits"
 
-		git log $cbranch --format=%H > "${ij}-GATE-commits"
+		git log "$cbranch" --format=%H > "${ij}-GATE-commits"
 		fgrep -v -f "${ij}-GATE-commits" "${ij}-ALL-commits" \
 		    > "${ij}-TODO-commits"
 
@@ -931,7 +931,7 @@ lx_begin()
 			git checkout "$cbranch"
 		else
 			echo "    Leaves $num commit(s)"
-			if [ $cbranch = $branch ]; then
+			if [ "$cbranch" = "$branch" ]; then
 				cbranch="joyent_merge/`date +%Y%m%d`01"
 				git checkout -b "$cbranch" master || exit 1
 			else
