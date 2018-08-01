@@ -943,15 +943,25 @@ lx_stat()
 
 	cat <<- EOM
 		$c_banner
-		$tc lx commit(s) remaining
-		$pc lx commit(s) picked
-		$sc lx commit(s) skipped $c_reset
+	    $tc lx commit(s) remaining
+	    $pc lx commit(s) picked
+	    $sc lx commit(s) skipped $c_reset
 	EOM
 
 	if [ "$tc" -lt 1 ]; then
 		banner "--- No commits remaining. Run 'lx_end' to finish."
 		exit 1
 	fi
+
+	echo
+	echo "$c_banner"
+	cat "${ij}-TODO-commits" | while read -r f; do
+		git -C "$illumos_clone" \
+		    show --compact-summary --format=oneline "$f" \
+		    | head -1 | sed 's/Reviewed.*//' | cut -d\  -f2- \
+		    | sed 's/^/    /'
+	done
+	echo "$c_reset"
 }
 
 lx_pick()
