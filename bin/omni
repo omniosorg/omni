@@ -885,17 +885,25 @@ omnios_pull_request()
 	rm -f "$prdata" "$patch"
 }
 
+lx_check_branch()
+{
+	typeset _branch="`repo_branch "$illumos_clone"`"
+	[[ "$_branch" =~ (joyent|upstream)_merge/* ]] || \
+	    abort "On wrong branch, $_branch (have you run lx_begin?)"
+}
+
 lx_begin()
 {
+	typeset cbranch="`repo_branch "$illumos_clone"`"
+	[[ "$cbranch" != "$branch" && "$cbranch" != upstream_merge/* ]] \
+	    && abort "Not on a suitable branch to begin lx merge ($cbranch)"
 	check_repo "$lxdata_clone" "$branch"
-	(
-		cd "$lxdata_clone"
-		git pull
 
+	(
+		git -C "$lxdata_clone" pull
 		[ -f "${ij}-ALL-commits" ] && \
 		    abort "An LX merge session is in progress, aborting."
 
-		check_repo "$illumos_clone" "$branch"
 		cd "$illumos_clone"
 		reset_illumos_branch
 		# Ensure that the local branch is fully up-to-date
@@ -911,7 +919,7 @@ lx_begin()
 
 		echo "--- Filtering out gate commits"
 
-		git log master --format=%H > "${ij}-GATE-commits"
+		git log $cbranch --format=%H > "${ij}-GATE-commits"
 		fgrep -v -f "${ij}-GATE-commits" "${ij}-ALL-commits" \
 		    > "${ij}-TODO-commits"
 
@@ -920,12 +928,16 @@ lx_begin()
 		if [ "$num" -eq 0 ]; then
 			echo "-- No commits to evaluate."
 			rm -f "$ij"-*
-			git checkout "$branch"
+			git checkout "$cbranch"
 		else
 			echo "    Leaves $num commit(s)"
-			_branch="joyent_merge/`date +%Y%m%d`01"
-			git checkout -b "$_branch" master || exit 1
-			check_repo "$illumos_clone" "$_branch"
+			if [ $cbranch = $branch ]; then
+				cbranch="joyent_merge/`date +%Y%m%d`01"
+				git checkout -b "$cbranch" master || exit 1
+			else
+				git checkout "$cbranch" || exit 1
+			fi
+			check_repo "$illumos_clone" "$cbranch"
 		fi
 	) || exit 1
 	lx_stat
@@ -933,6 +945,7 @@ lx_begin()
 
 lx_stat()
 {
+	lx_check_branch
 	[ -f "${ij}-ALL-commits" ] || abort "No LX merge session in progress"
 
 	typeset tc="`wc -l < "${ij}-TODO-commits"`"
@@ -967,9 +980,7 @@ lx_stat()
 lx_pick()
 {
 	typeset cpargs="$*"
-	_branch="`repo_branch "$illumos_clone"`"
-	[[ "$_branch" = joyent_merge/* ]] || \
-	    abort "On wrong branch, $_branch (have you run lx_begin?)"
+	lx_check_branch
 
 	[ -n "$cpargs" ] && cpargs=-e
 
@@ -1032,9 +1043,7 @@ lx_pick()
 
 lx_back()
 {
-	_branch="`repo_branch "$illumos_clone"`"
-	[[ "$_branch" = joyent_merge/* ]] || \
-	    abort "On wrong branch, $_branch (have you run lx_begin?)"
+	lx_check_branch
 
 	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
 
@@ -1074,14 +1083,13 @@ $jhash
 
 lx_end()
 {
-	_branch="`repo_branch "$illumos_clone"`"
-	[[ $_branch = joyent_merge/* ]] || \
-	    abort "On wrong branch, $_branch (have you run lx_begin?)"
+	lx_check_branch
 	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
 	[ -s "${ij}-TODO-commits" ] && \
 	    abort "Not all commits have been evaluated,"\
 	    "run 'lx_pick' until none remain."
 
+	typeset _branch="`repo_branch "$illumos_clone"`"
 	lasthash="`tail -1 "$lxdata_clone/ij-decided-commits"`"
 
 	(
@@ -1129,13 +1137,11 @@ lx_end()
 lx_abort()
 {
 	[ -f "${ij}-ALL-commits" ] || abort "No LX merge session in progress"
-
-	_branch="`repo_branch "$illumos_clone"`"
-	[[ $_branch = joyent_merge/* ]] || \
-	    abort "On wrong branch, $_branch (is merge in progress?)"
+	lx_check_branch
 
 	ask "Stop lx merge and reset state?" || exit 0
 
+	typeset _branch="`repo_branch "$illumos_clone"`"
 	git -C "$illumos_clone" reset HEAD --hard
 	git -C "$illumos_clone" checkout master
 	git -C "$illumos_clone" branch -D "$_branch"
