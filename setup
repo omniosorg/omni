@@ -162,6 +162,9 @@ install_env()
 		s^__WORKINGTREE__^$wd^
 		s^__BUILDNUM__^$relnum^
 	" < "$mydir/etc/template.env" > "$wd/omnios.env"
+	# Translate the GCC root variable back when building old versions
+	[ $relnum -lt 151027 ] && \
+	    sed -i 's/GNUC_ROOT/GCC_ROOT/g' "$wd/omnios.env"
 }
 
 install_site()
