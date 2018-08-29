@@ -335,6 +335,8 @@ update_omnios()
         (
 		cd "$omnios_clone"
 		git pull upstream "$branch" --no-edit --tags
+		git fetch origin
+		git remote prune origin
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
