@@ -544,6 +544,8 @@ cleanup_omnios()
 	reset_buildrepo
 	echo "Removing build logs..."
 	find "$omnios_clone" -type f -name build.log\* -exec rm -f {} +
+	echo "Removing build links..."
+	find "$omnios_clone" -type l -name tmp -exec rm -f {} +
 }
 
 cleanup_illumos()
