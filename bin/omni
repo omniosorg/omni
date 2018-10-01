@@ -401,7 +401,10 @@ build_illumos()
 	export logf="$illumos_clone/log/nightly.log"
 	[ -f "$logf" ] && rm -f "$logf"
 
-	ctrun -l child -o noorphan /opt/onbld/bin/nightly "$env" &
+	cp "$illumos_clone/usr/src/tools/scripts/nightly.sh" \
+	    "$illumos_clone/nightly.sh"
+	chmod +x "$illumos_clone/nightly.sh"
+	ctrun -l child -o noorphan "$illumos_clone/nightly.sh" "$env" &
 	nightlypid=$!
 
 	(
