@@ -361,6 +361,17 @@ update_kayak()
 	)
 }
 
+illumos_tools()
+{
+	ILLUMOS_TOOLS="$illumos_clone/tools"
+	[ -d "$ILLUMOS_TOOLS" ] || mkdir -p "$ILLUMOS_TOOLS"
+	for tool in nightly.sh bldenv.sh; do
+		cp "$illumos_clone/usr/src/tools/scripts/$tool" \
+		    "$ILLUMOS_TOOLS/$tool"
+		chmod +x "$ILLUMOS_TOOLS/$tool"
+	done
+}
+
 terminate_illumos()
 {
 	banner "Stopping illumos build, please wait..."
@@ -401,10 +412,8 @@ build_illumos()
 	export logf="$illumos_clone/log/nightly.log"
 	[ -f "$logf" ] && rm -f "$logf"
 
-	cp "$illumos_clone/usr/src/tools/scripts/nightly.sh" \
-	    "$illumos_clone/nightly.sh"
-	chmod +x "$illumos_clone/nightly.sh"
-	ctrun -l child -o noorphan "$illumos_clone/nightly.sh" "$env" &
+	illumos_tools
+	ctrun -l child -o noorphan "$ILLUMOS_TOOLS/nightly.sh" "$env" &
 	nightlypid=$!
 
 	(
@@ -507,9 +516,10 @@ onu_illumos()
 
 build_cscope()
 {
-	/opt/onbld/bin/bldenv "$illumos_env" \
+	illumos_tools
+	"$ILLUMOS_TOOLS/bldenv.sh" "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake setup" > /dev/null
-	/opt/onbld/bin/bldenv "$illumos_env" \
+	"$ILLUMOS_TOOLS/bldenv.sh" "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake cscope.out"
 }
 
@@ -554,7 +564,7 @@ cleanup_omnios()
 cleanup_illumos()
 {
 	echo "Cleaning illumos-omnios..."
-	/opt/onbld/bin/bldenv "$illumos_env" \
+	"$ILLUMOS_TOOLS/bldenv.sh" "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake clobber" > /dev/null
 	#git -C "$illumos_clone" clean -fd
 	echo "Removing illumos proto area..."
@@ -1362,6 +1372,7 @@ Operations (defaults for optional arguments are shown in []):
     cleanup [target]    - reset build environment to clean state. Target
                           is optional and can be 'omnios' or 'illumos'
     reset_repo          - clear and re-initialise the build repo           (rr)
+    illumos_tools       - populate tools area under illumos environment    (it)
 EOM
 
 	is dev && cat << EOM
@@ -1421,6 +1432,7 @@ case $op in
 	uk|update_kayak)		update_kayak ;;
 	bm|build_media)			build_media "$@" ;;
 	mail_msg|mm)			view_mail_msg ;;
+	it|illumos_tools)		illumos_tools ;;
 	onu)				onu_illumos "$@" ;;
 	"do"|destroy_onu)		onu_destroy ;;
 	cleanup)			cleanup "$@" ;;
