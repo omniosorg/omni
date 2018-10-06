@@ -591,6 +591,7 @@ cleanup_omnios()
 cleanup_illumos()
 {
 	echo "Cleaning illumos-omnios..."
+	illumos_tools
 	"$ILLUMOS_TOOLS/bldenv.sh" "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake clobber" > /dev/null
 	#git -C "$illumos_clone" clean -fd
