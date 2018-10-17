@@ -423,18 +423,6 @@ build_illumos()
 	typeset benv="`basename "$env"`"
 	banner "Starting illumos-omnios $release build... ($benv)"
 
-	if [ -f "$illumos_clone/usr/src/tools/env/omnios-illumos-omnios.sh" ]
-	then
-		typeset tver="`grep 'ONNV_BUILDNUM=' \
-		    "$illumos_clone/usr/src/tools/env/omnios-illumos-omnios.sh"\
-		    | cut -d= -f2`"
-
-		if [ "$tver" != "$relnum" ]; then
-			banner "Version mismatch - env=$relnum, src=$tver"
-			ask 'Continue?' || exit 0
-		fi
-	fi
-
 	# Remove any stale log file
 	export logf="$illumos_clone/log/nightly.log"
 	[ -f "$logf" ] && rm -f "$logf"
