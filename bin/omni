@@ -875,7 +875,14 @@ omnios_pull_request()
 
 	prdata="`mktemp`"
 	[ "$branch" = "master" ] || commit_msg="$commit_msg ($branch)"
-	echo "$commit_msg" > "$prdata"
+
+	if [[ "$commit_msg" = "Preparing for r151"* ]]; then
+		cat <<- EOM > "$prdata"
+			# Please do not merge...
+		EOM
+	else
+		echo "$commit_msg" > "$prdata"
+	fi
 
 	r=
 	while [ "$r" != 'y' ]; do
