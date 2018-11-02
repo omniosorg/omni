@@ -727,7 +727,7 @@ illumos_pull_request()
 {
 	_branch="`repo_branch "$illumos_clone"`"
 	typeset force
-	[ "$1" = "-f" ] && force=1 || force=0
+	[ "$1" = "-f" ] && shift && force=1 || force=0
 	typeset type="${1:-upstream}"
 
 	# This is just a sanity check to look for a branch name ending in
