@@ -392,9 +392,14 @@ illumos_tools()
 {
 	ILLUMOS_TOOLS="$illumos_clone/tools"
 	[ -d "$ILLUMOS_TOOLS" ] || mkdir -p "$ILLUMOS_TOOLS"
-	for tool in nightly.sh bldenv.sh; do
-		cp "$illumos_clone/usr/src/tools/scripts/$tool" \
-		    "$ILLUMOS_TOOLS/$tool"
+	for tool in nightly bldenv; do
+		# Newer illumos has these tools already in tools/
+		if [ ! -f "$ILLUMOS_TOOLS/$tool" -a \
+		    -f "$illumos_clone/usr/src/tools/scripts/$tool.sh" ]; then
+			# Old illumos tree without tools/
+			cp "$illumos_clone/usr/src/tools/scripts/$tool.sh" \
+			    "$ILLUMOS_TOOLS/$tool"
+		fi
 		chmod +x "$ILLUMOS_TOOLS/$tool"
 	done
 }
@@ -428,7 +433,7 @@ build_illumos()
 	[ -f "$logf" ] && rm -f "$logf"
 
 	illumos_tools
-	ctrun -l child -o noorphan "$ILLUMOS_TOOLS/nightly.sh" "$env" &
+	ctrun -l child -o noorphan "$ILLUMOS_TOOLS/nightly" "$env" &
 	nightlypid=$!
 
 	(
@@ -532,9 +537,9 @@ onu_illumos()
 build_cscope()
 {
 	illumos_tools
-	"$ILLUMOS_TOOLS/bldenv.sh" "$illumos_env" \
+	"$ILLUMOS_TOOLS/bldenv" "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake setup" > /dev/null
-	"$ILLUMOS_TOOLS/bldenv.sh" "$illumos_env" \
+	"$ILLUMOS_TOOLS/bldenv" "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake cscope.out"
 }
 
@@ -580,7 +585,7 @@ cleanup_illumos()
 {
 	echo "Cleaning illumos-omnios..."
 	illumos_tools
-	"$ILLUMOS_TOOLS/bldenv.sh" "$illumos_env" \
+	"$ILLUMOS_TOOLS/bldenv" "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake clobber" > /dev/null
 	#git -C "$illumos_clone" clean -fd
 	echo "Removing illumos proto area..."
