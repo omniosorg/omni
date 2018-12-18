@@ -455,6 +455,7 @@ build_omnios()
 {
 	typeset arg="${*:-${omnios_buildarg}}"
 	[ "$arg" = "-e" ] && arg="-e ${omnios_buildarg}"
+	[ "$arg" = "-E" ] && arg="-E ${omnios_buildarg}"
 	(
 		cd "$omnios_clone/build"
 		[ -z "$USER" -a -n "$LOGNAME" ] && USER="$LOGNAME"
