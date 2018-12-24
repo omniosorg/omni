@@ -1028,7 +1028,7 @@ lx_pick()
 	typeset cpargs="$*"
 	lx_check_branch
 
-	[ -n "$cpargs" ] && cpargs=-e
+	[ -z "$cpargs" ] && cpargs=-e
 
 	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
 
