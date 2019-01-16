@@ -26,6 +26,14 @@ if [ "$1" = "setup" ]; then
 	exit 0
 fi
 
+# Place this script into a new contract and configure it so that all child
+# processes are terminated on exit.
+
+if ! ctstat -vi `ps -o ctid= -p $$` | egrep -s noorphan; then
+	ctrun -l child -o noorphan $0 "$@"
+	exit $?
+fi
+
 CFGFILE=$HOME/.omni
 if [ "$1" = "-c" -a -n "$2" ]; then
 	CFGFILE="$2"
@@ -408,9 +416,6 @@ terminate_illumos()
 {
 	banner "Stopping illumos build, please wait..."
 	kill "$nightlypid" 2>/dev/null
-	pkill -9 -P "$tailpid"
-	sleep 1
-	kill -9 "$tailpid" 2>/dev/null
 }
 
 build_illumos()
