@@ -29,8 +29,8 @@ fi
 # Place this script into a new contract and configure it so that all child
 # processes are terminated on exit.
 
-if ! ctstat -vi `ps -o ctid= -p $$` | egrep -s noorphan; then
-	ctrun -l child -o noorphan $0 "$@"
+if ! ctstat -vi "`ps -o ctid= -p $$`" | egrep -s noorphan; then
+	ctrun -l child -o noorphan "$0" "$@"
 	exit $?
 fi
 
@@ -447,7 +447,6 @@ build_illumos()
 		done
 		tail -f "$logf" | egrep '^(====|real |user |sys )'
 	) &
-	tailpid=$!
 
 	trap terminate_illumos INT
 	wait $nightlypid
