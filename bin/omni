@@ -249,6 +249,7 @@ update_illumos_bloody()
 				git push origin "$_branch"
 			done
 			git push origin --tags
+			git gc --auto
 		fi
 	)
 }
@@ -266,6 +267,7 @@ update_illumos_stable()
 		then
 			git push origin "$branch"
 			git push origin --tags
+			git gc --auto
 		fi
 	)
 }
@@ -351,6 +353,7 @@ update_omnios()
 		then
 			git push origin "$branch"
 			git push origin --tags
+			git gc --auto
 		fi
 	)
 }
@@ -366,6 +369,7 @@ update_kayak()
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
 			git push origin "$branch"
+			git gc --auto
 		fi
 	)
 }
@@ -383,6 +387,7 @@ update_extra()
 			    && ask "Push updates to github/$gituser?"
 			then
 				git push origin "$branch"
+				git gc --auto
 			fi
 		)
 	done
