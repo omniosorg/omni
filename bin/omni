@@ -129,9 +129,11 @@ banner()
 
 abort()
 {
-	echo
-	echo "$c_error*** $*$c_reset"
-	echo
+	(
+		echo
+		echo "$c_error*** $*$c_reset"
+		echo
+	) >> /dev/stderr
 	exit 1
 }
 
@@ -542,6 +544,26 @@ onu_illumos()
 	done
 	banner "ONU to new BE $be-onu"
 	$PFEXEC /opt/onbld/bin/onu -t "$be-onu" -d "$pkgdir"
+}
+
+build_gitignore()
+{
+	# Check that there's a mail_msg as a proxy for a full build having
+	# been run.
+	mail_msg >/dev/null
+
+	echo "Re-generating .gitignore"
+	(
+		cd "$illumos_clone"
+
+		sed -i '/BEGIN AUTO-GENERATED/,$d' .gitignore
+		echo "# BEGIN AUTO-GENERATED" >> .gitignore
+		git status --short --branch -unormal | \
+		    grep '^?? ' | cut -d\  -f2- >> .gitignore
+
+		[ "`wc -l < .gitignore`" -lt 4000 ] && \
+		    banner "WARNING, new .gitignore may be too short"
+	)
 }
 
 build_cscope()
@@ -1433,7 +1455,8 @@ EOM
     ctfcheck            - compare CTF type data between running system     (ctf)
                           and last built bits
     cscope              - build cscope database
-    expand_pkg          - Fetch and expand a pckage from an IPS reposntory (ep)
+    gitignore           - re-build .gitignore
+    expand_pkg          - Fetch and expand a pckage from an IPS repository (ep)
 EOM
 
 	is guardian && cat << EOM
@@ -1495,6 +1518,7 @@ case $op in
 					    || help ;;
 	expand_pkg|ep)			is dev && expand_pkg "$@" || help ;;
 	cscope)				is dev && build_cscope ;;
+	gitignore)			is dev && build_gitignore ;;
 	ctf|ctfcheck)			is dev && ctfcheck ;;
 	fnf|fnfind)			fnfind "$@" ;;
 	ig|igrep)			igrep "$@" ;;
