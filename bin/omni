@@ -226,6 +226,18 @@ check_repo()
 	fi
 }
 
+check_child()
+{
+	typeset repo="${1:?}"
+	typeset branch="${2:?}"
+
+	typeset _branch="`repo_branch "$repo"`"
+
+	git -C "$repo" branch --contains "$branch" \
+	    | egrep -s "^\\*? *$_branch\$" \
+	    || abort "$_branch is not a child of $branch"
+}
+
 update_illumos_bloody()
 {
 	(
@@ -548,6 +560,9 @@ onu_illumos()
 
 build_gitignore()
 {
+	# Command only applies to branches which are forked from master
+	check_child "$illumos_clone" master
+
 	# Check that there's a mail_msg as a proxy for a full build having
 	# been run.
 	mail_msg >/dev/null
