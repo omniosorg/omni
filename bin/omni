@@ -437,6 +437,13 @@ terminate_illumos()
 	kill "$nightlypid" 2>/dev/null
 }
 
+env_illumos()
+{
+	illumos_tools
+	cd "$illumos_clone"
+	"$ILLUMOS_TOOLS/bldenv" "$illumos_env" "$@"
+}
+
 build_illumos()
 {
 	typeset env="${1:-${illumos_env}}"
@@ -1423,6 +1430,8 @@ Operations (defaults for optional arguments are shown in []):
 
     show_config         - display the current configuration                (cfg)
 
+    env                 - enter an illumos build environment
+
     update_illumos      - update your local omnios illumos environment     (ui)
     build_illumos [env] - build omnios-illumos [omnios.env]                (bi)
     mail_msg            - view mail_msg file from last build               (mm)
@@ -1500,6 +1509,7 @@ EOM
 op="$1"; shift
 case $op in
 	cfg|sc|show_config)		show_config ;;
+	env)				env_illumos ;;
 	ui|update_illumos)		update_illumos ;;
 	bi|build_illumos)		build_illumos "$@" ;;
 	uo|update_omnios)		update_omnios ;;
