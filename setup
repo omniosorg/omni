@@ -188,6 +188,13 @@ EOM
 
 }
 
+install_hooks()
+{
+	echo "--- Install hooks"
+	cp "$mydir/etc/prepare-commit-msg"* "$wd/illumos-omnios/.git/hooks/"
+	chmod 755 "$wd/illumos-omnios/.git/hooks/prepare-commit-msg"
+}
+
 echo "This system is running OmniOS $release"
 
 if [ "$1" = "-ssh" ]; then
@@ -246,6 +253,7 @@ gitclone kayak
 install_config
 install_env
 install_site
+install_hooks
 
 echo
 

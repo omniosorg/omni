@@ -1,0 +1,38 @@
+#!/bin/ksh
+
+file="$1"
+src="$2"
+hash="$3"
+
+[ "$src" = merge ] || exit 0
+
+gpath="`git rev-parse --git-path ''`"
+format='commit %h%n    %s'
+
+tf=`mktemp`
+(
+if [ -f "$gpath/MERGE_HEAD" ]; then
+	git log --format="$format" --reverse ORIG_HEAD..MERGE_HEAD
+	echo
+elif [ -f "$gpath/CHERRY_PICK_HEAD" ]; then
+	git log --format="commit %h" --reverse \
+	    CHERRY_PICK_HEAD~..CHERRY_PICK_HEAD
+	echo
+fi
+) > $tf
+
+firstblank="`egrep -n '^$' "$file" | sed 's/://; q'`"
+[ -n "$firstblank" ] && sed -i "${firstblank}r$tf" "$file"
+
+rm -f $tf
+
+sed -i -E '
+	/^# Conflicts:/,/^#$/s/^# *//
+	/^(Reviewed|Contributed|Approved) [Bb]y/d
+	s/ *Reviewed [Bb]y.*//
+	s/ *Contributed [Bb]y.*//
+	s/ *Approved [Bb]y.*//
+' "$file"
+
+exit 0
+
