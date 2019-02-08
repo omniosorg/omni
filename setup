@@ -127,6 +127,7 @@ gitclone()
 	typeset user=${2:-$gituser}
 
 	echo "--- Cloning $repo from ${github}/$user"
+	[ -d "$wd/$repo/.git" ] && return
 	git clone -b "$branch" "${github}/$user/$repo.git" "$wd/$repo"
 
 	(
@@ -163,8 +164,9 @@ install_env()
 		s^__BUILDNUM__^$relnum^
 	" < "$mydir/etc/template.env" > "$wd/omnios.env"
 	# Translate the GCC root variable back when building old versions
-	[ $relnum -lt 151027 ] && \
-	    sed -i 's/GNUC_ROOT/GCC_ROOT/g' "$wd/omnios.env"
+	if [ $relnum -lt 151027 ]; then
+		sed -i 's/GNUC_ROOT/GCC_ROOT/g' "$wd/omnios.env"
+	fi
 }
 
 install_site()
