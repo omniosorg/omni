@@ -7,12 +7,15 @@ hash="$3"
 [ "$src" = merge ] || exit 0
 
 gpath="`git rev-parse --git-path ''`"
-format='commit %h%n    %s'
+format='commit %h%n%B'
 
 tf=`mktemp`
 (
 if [ -f "$gpath/MERGE_HEAD" ]; then
-	git log --format="$format" --reverse ORIG_HEAD..MERGE_HEAD
+	git log --format="$format" --reverse ORIG_HEAD..MERGE_HEAD | sed -E '
+		/^[0-9]{4,5} /s/^/    /
+		/^$/d
+	'
 	echo
 elif [ -f "$gpath/CHERRY_PICK_HEAD" ]; then
 	git log --format="commit %h" --reverse \
@@ -28,10 +31,7 @@ rm -f $tf
 
 sed -i -E '
 	/^# Conflicts:/,/^#$/s/^# *//
-	/^(Reviewed|Contributed|Approved) [Bb]y/d
-	s/ *Reviewed [Bb]y.*//
-	s/ *Contributed [Bb]y.*//
-	s/ *Approved [Bb]y.*//
+	/^(Reviewed|(Portions )?[Cc]ontributed|Approved|Contributed) [Bb]y/d
 ' "$file"
 
 exit 0
