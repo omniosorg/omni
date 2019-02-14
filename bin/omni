@@ -18,6 +18,7 @@
 export PATH=/usr/bin:/usr/sbin
 export OMNIVER=master
 export SHELL=/bin/sh
+ghraw=https://raw.githubusercontent.com/omniosorg/omni/master
 
 if [ "$1" = "setup" ]; then
 	shift
@@ -667,10 +668,21 @@ cleanup()
 	esac
 }
 
+update_hooks()
+{
+	for hook in prepare-commit-msg; do
+		echo "Updating $hook hook"
+		curl -s "$ghraw/etc/$hook" \
+		    > "$illumos_clone/.git/hooks/$hook"
+		chmod 755 "$illumos_clone/.git/hooks/$hook"
+	done
+}
+
 merge_gate()
 {
 	ask "Merge changes from upstream illumos-gate?" || exit 0
 	check_repo "$illumos_clone" "$branch"
+	update_hooks
 	(
 		_branch="upstream_merge/`date +%Y%m%d`01"
 		cd "$illumos_clone"
