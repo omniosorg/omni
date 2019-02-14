@@ -243,12 +243,12 @@ update_illumos_bloody()
 	(
 		cd "$illumos_clone"
 		reset_illumos_branch
-		git pull upstream "$branch" --no-edit --tags
+		git pull upstream "$branch" --rebase --no-edit --tags
 
 		for _branch in upstream_gate upstream_joyent; do
 			banner "Updating $_branch branch"
 			git checkout "$_branch"
-			git pull "$_branch" master
+			git pull --rebase "$_branch" master
 		done
 
 		git checkout "$branch"
@@ -273,7 +273,7 @@ update_illumos_stable()
 	(
 		cd "$illumos_clone"
 		reset_illumos_branch
-		git pull upstream "$branch" --no-edit --tags
+		git pull upstream "$branch" --rebase --no-edit --tags
 		git fetch origin
 		git remote prune origin
 		echo
@@ -359,7 +359,7 @@ update_omnios()
 	banner "Updating $release OmniOS build"
         (
 		cd "$omnios_clone"
-		git pull upstream "$branch" --no-edit --tags
+		git pull upstream "$branch" --rebase --no-edit --tags
 		git fetch origin
 		git remote prune origin
 		echo
@@ -378,7 +378,7 @@ update_kayak()
 	banner "Updating $release kayak"
 	(
 		cd "$kayak_clone"
-		git pull upstream "$branch" --no-edit
+		git pull upstream "$branch" --rebase --no-edit
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
@@ -395,7 +395,7 @@ update_extra()
 		banner "Updating $release `basename $repo`"
 		(
 			cd "$repo"
-			git pull upstream "$branch" --no-edit
+			git pull upstream "$branch" --rebase --no-edit
 			echo
 			if anything_to_push \
 			    && ask "Push updates to github/$gituser?"
@@ -1006,7 +1006,7 @@ lx_begin()
 		cd "$illumos_clone"
 		reset_illumos_branch
 		# Ensure that the local branch is fully up-to-date
-		git pull upstream "$branch" --no-edit --tags || exit 1
+		git pull upstream "$branch" --rebase --no-edit --tags || exit 1
 		git checkout upstream_joyent || exit 1
 
 		echo "--- Building list of new commits"
