@@ -724,10 +724,15 @@ github_request()
 	typeset method="${4:-POST}"
 	typeset op="`mktemp`"
 
+	typeset media='application/vnd.github.v3+json'
+	# Enable the draft pull request API
+	media='application/vnd.github.v3.shadow-cat-preview+json'
+
+
 	curl -s -X "$method" \
 	    -o "$op" \
 	    -u "$auth" \
-	    -H "Accept: application/vnd.github.v3+json" \
+	    -H "Accept: $media" \
 	    -H "Content-Type: application/json" \
 	    --data-binary "@$data" \
 	    "https://api.github.com/$api"
@@ -759,6 +764,7 @@ create_pull_request()
 			"title":	"$title",
 			"head":		"$suser:$sbranch",
 			"base":		"$dbranch",
+			"draft":	true,
 			"body":		"`cat "$bodyfile"`"
 		}
 	EOM
