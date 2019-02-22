@@ -31,7 +31,7 @@ rm -f $tf
 
 sed -i -E '
 	/^# Conflicts:/,/^#$/s/^# *//
-	/^(Reviewed|(Portions )?[Cc]ontributed|Approved|Contributed) [Bb]y/d
+	/^(Reviewed|(Portions )?[Cc]ontributed|Approved|Contributed)[- ][Bb]y/d
 ' "$file"
 
 exit 0
