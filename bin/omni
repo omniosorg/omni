@@ -176,10 +176,9 @@ response()
 	echo "$a"
 }
 
-shortener='http://tny.im/yourls-api.php?action=shorturl&format=simple&url='
 shorten_url()
 {
-	wget -q -O - "$shortener$*"
+	curl -s --data-urlencode "url=$*" https://i.no.de | cut -d '"' -f8
 }
 
 anything_to_push()
