@@ -926,7 +926,6 @@ omnios_pull_request()
 
 	git -C "$omnios_clone" push -u origin "$_branch"
 	commit_msg="`git -C "$omnios_clone" log -n1 --format=%s`"
-	git -C "$omnios_clone" checkout "$branch"
 
 	prbase="https://github.com/omniosorg/omnios-build/compare"
 	prbranch="$branch...$gituser:$_branch?expand=1"
@@ -941,6 +940,7 @@ omnios_pull_request()
 			    `shorten_url "$prbase/$prbranch"`
 
 		EOM
+		git -C "$omnios_clone" checkout "$branch"
 		return
 	fi
 
@@ -999,6 +999,8 @@ omnios_pull_request()
 		"$prdata" "$patch"
 
 	rm -f "$prdata" "$patch"
+
+	git -C "$omnios_clone" checkout "$branch"
 }
 
 lx_check_branch()
