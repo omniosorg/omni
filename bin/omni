@@ -667,6 +667,58 @@ cleanup()
 	esac
 }
 
+get_repolist()
+{
+	[ -z "$1" ] && set -- illumos omnios kayak extra
+
+	repos=
+	for r in "$@"; do
+		case $r in
+			illumos) repos+="$illumos_clone " ;;
+			omnios)  repos+="$omnios_clone " ;;
+			kayak)   repos+="$kayak_clone " ;;
+			extra)   repos+="$extra_repos " ;;
+		esac
+	done
+}
+
+gc()
+{
+	get_repolist "$@"
+	for repo in $repolist; do
+		echo "$c_highlight[`basename "$repo"`]$c_reset"
+		git -C "$repo" gc --prune=now
+	done
+}
+
+branches()
+{
+	all=0
+	[ "$1" = "-a" ] && all=1 && shift
+	get_repolist "$@"
+	for repo in $repos; do
+		printf "%13s " "`basename "$repo"`"
+		_br="`repo_branch "$repo"`"
+		[ "$_br" = "$branch" ] && echo "$c_highlight\\c" \
+		    || echo "$c_error\\c"
+		echo "[$_br]$c_reset"
+
+		[ "$all" -eq 1 ] || continue
+
+		merged=(`git -C "$repo" branch --merged`)
+		git -C "$repo" branch | sed 's/..//' | while read b; do
+			ismerged=0
+			for l in ${merged[*]}; do
+				[ "$l" = "$b" ] && ismerged=1 && break
+			done
+			[ "$b" = "$_br" ] && ismerged=0
+			[ "$ismerged" -eq 1 ] && echo "$c_highlight\\c" \
+			    || echo "$c_error\\c"
+			printf -- "%25s-- %s$c_reset\n" "" "$b"
+		done
+	done
+}
+
 update_hooks()
 {
 	for hook in prepare-commit-msg; do
@@ -1448,6 +1500,7 @@ omni [-n|-y] <operation>
 Operations (defaults for optional arguments are shown in []):
 
     show_config         - display the current configuration                (cfg)
+    branches            - show current branch status                       (br)
 
     env                 - enter an illumos build environment
 
@@ -1475,6 +1528,7 @@ Operations (defaults for optional arguments are shown in []):
 
     cleanup [target]    - reset build environment to clean state. Target
                           is optional and can be 'omnios' or 'illumos'
+    gc                  - run git garbage collection on local repositories
     reset_repo          - clear and re-initialise the build repo           (rr)
     illumos_tools       - populate tools area under illumos environment    (it)
 EOM
@@ -1528,6 +1582,7 @@ EOM
 op="$1"; shift
 case $op in
 	cfg|sc|show_config)		show_config ;;
+	branches|br)			branches "$@" ;;
 	env)				env_illumos ;;
 	ui|update_illumos)		update_illumos ;;
 	bi|build_illumos)		build_illumos "$@" ;;
@@ -1543,6 +1598,7 @@ case $op in
 	onu)				onu_illumos "$@" ;;
 	"do"|destroy_onu)		onu_destroy ;;
 	cleanup)			cleanup "$@" ;;
+	gc)				gc "$@" ;;
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
 	ud|upstream_diff)		is dev && upstream_diff "$@" || help ;;
 	mg|merge_gate)			is dev && merge_gate || help ;;
