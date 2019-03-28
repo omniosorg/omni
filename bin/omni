@@ -511,7 +511,11 @@ build_media()
 
 	(
 		cd "$kayak_clone"
-		if [ "$relnum" -ge 151025 ]; then
+		if [ "$relnum" -ge 151029 ]; then
+			$PFEXEC gmake zfsdestroy all clean \
+			    PKGURL="$PKGURL" \
+			    PREBUILT_ILLUMOS="$illumos_clone"
+		elif [ "$relnum" -ge 151025 ]; then
 			$PFEXEC gmake zfsdestroy install-usb clean \
 			    PKGURL="$PKGURL" \
 			    PREBUILT_ILLUMOS="$illumos_clone"
