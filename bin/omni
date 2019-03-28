@@ -675,13 +675,13 @@ get_repolist()
 {
 	[ -z "$1" ] && set -- illumos omnios kayak extra
 
-	repos=
+	repolist=
 	for r in "$@"; do
 		case $r in
-			illumos) repos+="$illumos_clone " ;;
-			omnios)  repos+="$omnios_clone " ;;
-			kayak)   repos+="$kayak_clone " ;;
-			extra)   repos+="$extra_repos " ;;
+			illumos) repolist+="$illumos_clone " ;;
+			omnios)  repolist+="$omnios_clone " ;;
+			kayak)   repolist+="$kayak_clone " ;;
+			extra)   repolist+="$extra_repos " ;;
 		esac
 	done
 }
@@ -700,7 +700,7 @@ branches()
 	all=0
 	[ "$1" = "-a" ] && all=1 && shift
 	get_repolist "$@"
-	for repo in $repos; do
+	for repo in $repolist; do
 		printf "%13s " "`basename "$repo"`"
 		_br="`repo_branch "$repo"`"
 		[ "$_br" = "$branch" ] && echo "$c_highlight\\c" \
@@ -710,7 +710,7 @@ branches()
 		[ "$all" -eq 1 ] || continue
 
 		merged=(`git -C "$repo" branch --merged`)
-		git -C "$repo" branch | sed 's/..//' | while read b; do
+		git -C "$repo" branch | sed 's/..//' | while read -r  b; do
 			ismerged=0
 			for l in ${merged[*]}; do
 				[ "$l" = "$b" ] && ismerged=1 && break
@@ -725,6 +725,7 @@ branches()
 
 update_hooks()
 {
+	# shellcheck disable=SC2043
 	for hook in prepare-commit-msg; do
 		echo "Updating $hook hook"
 		curl -s "$ghraw/etc/$hook" \
@@ -1587,7 +1588,7 @@ op="$1"; shift
 case $op in
 	cfg|sc|show_config)		show_config ;;
 	branches|br)			branches "$@" ;;
-	env)				env_illumos ;;
+	env)				env_illumos "$@" ;;
 	ui|update_illumos)		update_illumos ;;
 	bi|build_illumos)		build_illumos "$@" ;;
 	uo|update_omnios)		update_omnios ;;
