@@ -782,7 +782,7 @@ github_request()
 
 	typeset media='application/vnd.github.v3+json'
 	# Enable the draft pull request API
-	media='application/vnd.github.v3.shadow-cat-preview+json'
+	media='application/vnd.github.shadow-cat-preview+json'
 
 
 	curl -s -X "$method" \
@@ -947,8 +947,7 @@ EOM
 		cat <<- EOM > "$patch"
 			{
 				"labels": [
-					"upstream-merge",
-					"on-hold"
+					"upstream-merge"
 				]
 			}
 		EOM
