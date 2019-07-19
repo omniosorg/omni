@@ -172,6 +172,10 @@ install_env()
 	if [ $relnum -lt 151027 ]; then
 		sed -i 's/GNUC_ROOT/GCC_ROOT/g' "$wd/omnios.env"
 	fi
+	# Enable the shadow compiler from r151029
+	if [ $relnum -lt 151029 ]; then
+		sed -i '/CW_NO_SHADOW/d' "$wd/omnios.env"
+	fi
 }
 
 install_site()
