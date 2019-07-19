@@ -86,6 +86,9 @@ else
 	[ -z "$relnum" ] && relnum=151999
 fi
 
+git='/usr/bin/git --no-pager'
+gitp=/usr/bin/git
+
 export ij="$lxdata_clone/ij"
 
 # Lack of colour support in the terminal is not fatal
@@ -184,26 +187,26 @@ shorten_url()
 anything_to_push()
 {
 	[ "$gituser" = omniosorg ] && return 1
-	git for-each-ref --format="%(refname:short) %(push:track)" refs/heads \
+	$git for-each-ref --format="%(refname:short) %(push:track)" refs/heads \
 	    | egrep -s '\[ahead '
 }
 
 repo_branch()
 {
 	typeset repo=${1:?repo}
-	git -C "$repo" symbolic-ref --short HEAD
+	$git -C "$repo" symbolic-ref --short HEAD
 }
 
 reset_illumos_branch()
 {
-	[ -n "`git -C "$illumos_clone" ls-files closed`" ] && \
-	    git -C "$illumos_clone" checkout closed/README.ON-BINARIES.i386 \
+	[ -n "`$git -C "$illumos_clone" ls-files closed`" ] && \
+	    $git -C "$illumos_clone" checkout closed/README.ON-BINARIES.i386 \
 	    || true
 }
 
 joyent_commit()
 {
-	git -C "$illumos_clone" show master:README.OmniOS | \
+	$git -C "$illumos_clone" show master:README.OmniOS | \
 	    grep 'Last illumos-joyent' | \
 	    awk '{print $4}'
 }
@@ -233,7 +236,7 @@ check_child()
 
 	typeset _branch="`repo_branch "$repo"`"
 
-	git -C "$repo" branch --contains "$branch" \
+	$git -C "$repo" branch --contains "$branch" \
 	    | egrep -s "^\\*? *$_branch\$" \
 	    || abort "$_branch is not a child of $branch"
 }
@@ -243,15 +246,15 @@ update_illumos_bloody()
 	(
 		cd "$illumos_clone"
 		reset_illumos_branch
-		git pull upstream "$branch" --rebase --no-edit --tags
+		$git pull upstream "$branch" --rebase --no-edit --tags
 
 		for _branch in upstream_gate upstream_joyent; do
 			banner "Updating $_branch branch"
-			git checkout "$_branch"
-			git pull --rebase "$_branch" master
+			$git checkout "$_branch"
+			$git pull --rebase "$_branch" master
 		done
 
-		git checkout "$branch"
+		$git checkout "$branch"
 
 		echo
 		# Check to see if there are any updates to push back
@@ -260,10 +263,10 @@ update_illumos_bloody()
 			for _branch in "$branch" upstream_gate upstream_joyent
 			do
 				banner "Pushing $_branch branch"
-				git push origin "$_branch"
+				$git push origin "$_branch"
 			done
-			git push origin --tags
-			git gc --auto
+			$git push origin --tags
+			$git gc --auto
 		fi
 	)
 }
@@ -273,15 +276,15 @@ update_illumos_stable()
 	(
 		cd "$illumos_clone"
 		reset_illumos_branch
-		git pull upstream "$branch" --rebase --no-edit --tags
-		git fetch origin
-		git remote prune origin
+		$git pull upstream "$branch" --rebase --no-edit --tags
+		$git fetch origin
+		$git remote prune origin
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
-			git push origin "$branch"
-			git push origin --tags
-			git gc --auto
+			$git push origin "$branch"
+			$git push origin --tags
+			$git gc --auto
 		fi
 	)
 }
@@ -331,18 +334,18 @@ upstream_diff()
 		echo "GATE:"
 		echo
 
-		git -c color.ui=always log \
+		$git -c color.ui=always log \
 		    --reverse --no-merges --abbrev-commit \
 		    --pretty="tformat: $pp" \
 		    master..upstream_gate \
 		    | ud_process "$arg" https://www.illumos.org/issues
 
 		hash="`joyent_commit`"
-		head="`git rev-parse upstream_joyent`"
+		head="`$git rev-parse upstream_joyent`"
 		echo "$c_reset"
 		echo "JOYENT ($hash..):"
 		echo
-		git -c color.ui=always log \
+		$git -c color.ui=always log \
 		    --reverse --no-merges --abbrev-commit \
 		    --grep='^OS-' \
 		    --pretty="tformat: $pp" \
@@ -359,15 +362,15 @@ update_omnios()
 	banner "Updating $release OmniOS build"
         (
 		cd "$omnios_clone"
-		git pull upstream "$branch" --rebase --no-edit --tags
-		git fetch origin
-		git remote prune origin
+		$git pull upstream "$branch" --rebase --no-edit --tags
+		$git fetch origin
+		$git remote prune origin
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
-			git push origin "$branch"
-			git push origin --tags
-			git gc --auto
+			$git push origin "$branch"
+			$git push origin --tags
+			$git gc --auto
 		fi
 	)
 }
@@ -378,12 +381,12 @@ update_kayak()
 	banner "Updating $release kayak"
 	(
 		cd "$kayak_clone"
-		git pull upstream "$branch" --rebase --no-edit
+		$git pull upstream "$branch" --rebase --no-edit
 		echo
 		if anything_to_push && ask "Push updates to github/$gituser?"
 		then
-			git push origin "$branch"
-			git gc --auto
+			$git push origin "$branch"
+			$git gc --auto
 		fi
 	)
 }
@@ -395,13 +398,13 @@ update_extra()
 		banner "Updating $release `basename $repo`"
 		(
 			cd "$repo"
-			git pull upstream "$branch" --rebase --no-edit
+			$git pull upstream "$branch" --rebase --no-edit
 			echo
 			if anything_to_push \
 			    && ask "Push updates to github/$gituser?"
 			then
-				git push origin "$branch"
-				git gc --auto
+				$git push origin "$branch"
+				$git gc --auto
 			fi
 		)
 	done
@@ -584,7 +587,7 @@ build_gitignore()
 
 		sed -i '/BEGIN AUTO-GENERATED/,$d' .gitignore
 		echo "# BEGIN AUTO-GENERATED" >> .gitignore
-		git status --short --branch -unormal | \
+		$git status --short --branch -unormal | \
 		    grep '^?? ' | cut -d\  -f2- >> .gitignore
 
 		[ "`wc -l < .gitignore`" -lt 4000 ] && \
@@ -645,7 +648,7 @@ cleanup_illumos()
 	illumos_tools
 	"$ILLUMOS_TOOLS/bldenv" "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake clobber" > /dev/null
-	#git -C "$illumos_clone" clean -fd
+	#$git -C "$illumos_clone" clean -fd
 	echo "Removing illumos proto area..."
 	[ -d "$illumos_clone/proto" ] && rm -rf "$illumos_clone/proto"
 	echo "Removing illumos packages area..."
@@ -691,7 +694,7 @@ gc()
 	get_repolist "$@"
 	for repo in $repolist; do
 		echo "$c_highlight[`basename "$repo"`]$c_reset"
-		git -C "$repo" gc --prune=now
+		$git -C "$repo" gc --prune=now
 	done
 }
 
@@ -709,8 +712,8 @@ branches()
 
 		[ "$all" -eq 1 ] || continue
 
-		merged=(`git -C "$repo" branch --merged`)
-		git -C "$repo" branch | sed 's/..//' | while read -r  b; do
+		merged=(`$git -C "$repo" branch --merged`)
+		$git -C "$repo" branch | sed 's/..//' | while read -r  b; do
 			ismerged=0
 			for l in ${merged[*]}; do
 				[ "$l" = "$b" ] && ismerged=1 && break
@@ -742,9 +745,9 @@ merge_gate()
 	(
 		_branch="upstream_merge/`date +%Y%m%d`01"
 		cd "$illumos_clone"
-		git checkout -b "$_branch" || exit 1
+		$git checkout -b "$_branch" || exit 1
 		check_repo "$illumos_clone" "$_branch"
-		git merge upstream_gate
+		$git merge upstream_gate
 	) || exit 1
 }
 
@@ -756,9 +759,9 @@ abort_gate()
 
 	ask "Stop upstream merge and reset state?" || exit 0
 
-	git -C "$illumos_clone" reset HEAD --hard
-	git -C "$illumos_clone" checkout master
-	git -C "$illumos_clone" branch -D "$_branch"
+	$git -C "$illumos_clone" reset HEAD --hard
+	$git -C "$illumos_clone" checkout master
+	$git -C "$illumos_clone" branch -D "$_branch"
 
 	banner "Upstream merge aborted and $_branch branch deleted."
 }
@@ -874,14 +877,14 @@ illumos_pull_request()
 	ask "Push local branch $_branch ready for pull-request?" || exit 0
 
 	reset_illumos_branch
-	git -C "$illumos_clone" push -u origin "$_branch"
-	git -C "$illumos_clone" checkout "$branch"
+	$git -C "$illumos_clone" push -u origin "$_branch"
+	$git -C "$illumos_clone" checkout "$branch"
 
 	prbase="https://github.com/omniosorg/illumos-omnios/compare"
 	prbranch="$branch...$gituser:$_branch?expand=1"
 
 	echo
-	token="`git config user.token`"
+	token="`$git config user.token`"
 	if [ -z "$token" ] || ! ask "Create PR automatically on GitHub?"; then
 		cat <<- EOM
 			Local branch $_branch has been pushed to github.
@@ -973,21 +976,21 @@ omnios_pull_request()
 
 	( cd "$omnios_clone" && ./tools/test ) || abort "Test failure"
 
-	if [ -n "`git -C "$omnios_clone" diff --name-only`" ]; then
+	if [ -n "`$git -C "$omnios_clone" diff --name-only`" ]; then
 		banner "Uncommitted files found"
-		git -C "$omnios_clone" status --short --branch -unormal
+		$git -C "$omnios_clone" status --short --branch -unormal
 		echo
 		ask "Proceed?" || abort "PR aborted."
 	fi
 
-	git -C "$omnios_clone" push -u origin "$_branch"
-	commit_msg="`git -C "$omnios_clone" log -n1 --format=%s`"
+	$git -C "$omnios_clone" push -u origin "$_branch"
+	commit_msg="`$git -C "$omnios_clone" log -n1 --format=%s`"
 
 	prbase="https://github.com/omniosorg/omnios-build/compare"
 	prbranch="$branch...$gituser:$_branch?expand=1"
 
 	echo
-	token="`git config user.token`"
+	token="`$git config user.token`"
 	if [ -z "$token" ] || ! ask "Create PR automatically on GitHub?"; then
 		cat <<- EOM
 			Local branch $_branch has been pushed to github.
@@ -996,7 +999,7 @@ omnios_pull_request()
 			    `shorten_url "$prbase/$prbranch"`
 
 		EOM
-		git -C "$omnios_clone" checkout "$branch"
+		$git -C "$omnios_clone" checkout "$branch"
 		return
 	fi
 
@@ -1056,7 +1059,7 @@ omnios_pull_request()
 
 	rm -f "$prdata" "$patch"
 
-	git -C "$omnios_clone" checkout "$branch"
+	$git -C "$omnios_clone" checkout "$branch"
 }
 
 lx_check_branch()
@@ -1074,26 +1077,26 @@ lx_begin()
 	check_repo "$lxdata_clone" "$branch"
 
 	(
-		git -C "$lxdata_clone" pull
+		$git -C "$lxdata_clone" pull
 		[ -f "${ij}-ALL-commits" ] && \
 		    abort "An LX merge session is in progress, aborting."
 
 		cd "$illumos_clone"
 		reset_illumos_branch
 		# Ensure that the local branch is fully up-to-date
-		git pull upstream "$branch" --rebase --no-edit --tags || exit 1
-		git checkout upstream_joyent || exit 1
+		$git pull upstream "$branch" --rebase --no-edit --tags || exit 1
+		$git checkout upstream_joyent || exit 1
 
 		echo "--- Building list of new commits"
 
-		git log --reverse --no-merges --format=%H "`joyent_commit`.." \
+		$git log --reverse --no-merges --format=%H "`joyent_commit`.." \
 		    > "${ij}-ALL-commits"
 
 		echo "    Found  `wc -l < "${ij}-ALL-commits"` commit(s)"
 
 		echo "--- Filtering out gate commits"
 
-		git log "$cbranch" --format=%H > "${ij}-GATE-commits"
+		$git log "$cbranch" --format=%H > "${ij}-GATE-commits"
 		fgrep -v -f "${ij}-GATE-commits" "${ij}-ALL-commits" \
 		    > "${ij}-TODO-commits"
 
@@ -1102,14 +1105,14 @@ lx_begin()
 		if [ "$num" -eq 0 ]; then
 			echo "-- No commits to evaluate."
 			rm -f "$ij"-*
-			git checkout "$cbranch"
+			$git checkout "$cbranch"
 		else
 			echo "    Leaves $num commit(s)"
 			if [ "$cbranch" = "$branch" ]; then
 				cbranch="joyent_merge/`date +%Y%m%d`01"
-				git checkout -b "$cbranch" master || exit 1
+				$git checkout -b "$cbranch" master || exit 1
 			else
-				git checkout "$cbranch" || exit 1
+				$git checkout "$cbranch" || exit 1
 			fi
 			check_repo "$illumos_clone" "$cbranch"
 		fi
@@ -1143,7 +1146,7 @@ lx_stat()
 	echo
 	echo "$c_banner"
 	cat "${ij}-TODO-commits" | while read -r f; do
-		git -C "$illumos_clone" \
+		$git -C "$illumos_clone" \
 		    show --compact-summary --format=oneline "$f" \
 		    | head -1 | sed 's/Reviewed.*//' | cut -d\  -f2- \
 		    | sed 's/^/    /'
@@ -1167,12 +1170,12 @@ lx_pick()
 			lx_stat
 
 			hash="`head -1 "${ij}-TODO-commits"`"
-			os="`git log -n1 --format=%s "$hash" \
+			os="`$git log -n1 --format=%s "$hash" \
 			    | awk '{print $1}'`"
 
 			cherry=
 			while :; do
-				git show --compact-summary "$hash"
+				$gitp show --compact-summary "$hash"
 
 				echo
 				echo "        https://smartos.org/bugview/$os"
@@ -1185,7 +1188,7 @@ lx_pick()
 					;;
 				    s)
 					echo "Showing commit..."
-					git show "$hash"
+					$gitp show "$hash"
 					;;
 				    y)
 					echo "$hash" >> "${ij}-picked-commits"
@@ -1203,11 +1206,11 @@ lx_pick()
 			sed -i "/$hash/d" "${ij}-TODO-commits"
 			if [ "$cherry" -eq 1 ]; then
 				# shellcheck disable=SC2086
-				if ! git cherry-pick $cpargs "$hash"; then
+				if ! $git cherry-pick $cpargs "$hash"; then
 					echo
 					echo "Conflicting files:"
 					echo
-					git diff --name-only --diff-filter=UXB
+					$git diff --name-only --diff-filter=UXB
 					abort "Problem during cherry-pick."
 				fi
 			fi
@@ -1221,13 +1224,13 @@ lx_back()
 
 	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
 
-	hash="`git -C "$illumos_clone" log -n1 --pretty=format:%H`"
+	hash="`$git -C "$illumos_clone" log -n1 --pretty=format:%H`"
 	jhash="`tail -1 "${ij}-picked-commits"`"
 
 	[ -n "$jhash" ] || abort "Cannot fetch last commit hash"
 
-	log="`git -C "$illumos_clone" log -n1 --pretty=format:%s "$hash"`"
-	jlog="`git -C "$illumos_clone" log -n1 --pretty=format:%s "$jhash"`"
+	log="`$git -C "$illumos_clone" log -n1 --pretty=format:%s "$hash"`"
+	jlog="`$git -C "$illumos_clone" log -n1 --pretty=format:%s "$jhash"`"
 
 	if [ "$log" != "$jlog" ]; then
 		echo
@@ -1238,10 +1241,10 @@ lx_back()
 	fi
 
 	echo
-	git -C "$illumos_clone" show --compact-summary "$hash"
+	$git -C "$illumos_clone" show --compact-summary "$hash"
 	ask "Back-out this commit?" || exit 0
 
-	git -C "$illumos_clone" reset --merge "$hash^" \
+	$git -C "$illumos_clone" reset --merge "$hash^" \
 	    || abort "git reset failed."
 
 	sed -i "/$jhash/d" "${ij}-picked-commits"
@@ -1278,12 +1281,12 @@ lx_end()
 		mv ij-* "$arc"
 		aij="$lxdata_clone/$arc/ij"
 
-		git add "$arc"
-		git commit -m "LX Port data for $_branch" "$arc"
+		$git add "$arc"
+		$git commit -m "LX Port data for $_branch" "$arc"
 
 		is guardian \
 		    && ask "Push lx-port-data back to github/omniosorg?" \
-		    && git push
+		    && $git push
 
 		cd "$illumos_clone"
 
@@ -1291,16 +1294,16 @@ lx_end()
 
 		sed -i "/^Last illumos-joyent/s/: .*/: $lasthash/" \
 		    README.OmniOS
-		git commit -m 'Update README.OmniOS with last Joyent commit' \
+		$git commit -m 'Update README.OmniOS with last Joyent commit' \
 		    README.OmniOS
 
 		banner "The following commits have been picked."
-		git log --reverse --format=oneline "master..$_branch" \
+		$git log --reverse --format=oneline "master..$_branch" \
 		    | sed 's/Reviewed.*//' | cut -d\  -f2-
 
 		banner "The following commits have been skipped."
 		cat "${aij}-skipped-commits" | while read -r f; do
-			git show --compact-summary --format=oneline "$f" \
+			$git show --compact-summary --format=oneline "$f" \
 			    | head -1 | sed 's/Reviewed.*//' | cut -d\  -f2-
 		done
 
@@ -1316,9 +1319,9 @@ lx_abort()
 	ask "Stop lx merge and reset state?" || exit 0
 
 	typeset _branch="`repo_branch "$illumos_clone"`"
-	git -C "$illumos_clone" reset HEAD --hard
-	git -C "$illumos_clone" checkout master
-	git -C "$illumos_clone" branch -D "$_branch"
+	$git -C "$illumos_clone" reset HEAD --hard
+	$git -C "$illumos_clone" checkout master
+	$git -C "$illumos_clone" branch -D "$_branch"
 	rm -f "$ij"*
 
 	banner "LX merge aborted and $_branch branch deleted."
@@ -1466,12 +1469,12 @@ patch_motd()
 
 igrep()
 {
-	git -C "$illumos_clone" log --grep "$@"
+	$git -C "$illumos_clone" log --grep "$@"
 }
 
 ogrep()
 {
-	git -C "$omnios_clone" log --grep "$@"
+	$git -C "$omnios_clone" log --grep "$@"
 }
 
 push_upstreams()
@@ -1483,7 +1486,7 @@ push_upstreams()
 
 		for _branch in upstream_gate upstream_joyent; do
 			banner "Pushing $_branch branch to github/omniosorg"
-			git push upstream "$_branch"
+			$git push upstream "$_branch"
 		done
 	)
 }
