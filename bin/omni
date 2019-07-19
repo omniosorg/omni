@@ -472,9 +472,10 @@ build_illumos()
 
 	(
 		while [ ! -f "$logf" ]; do
-			sleep 1
+			sleep 0.1
 		done
-		tail -f "$logf" | egrep '^(====|real |user |sys )'
+		tail -f "$logf" | \
+		    egrep '^(====|real |user |sys |primary:|shadow:)'
 	) &
 
 	trap terminate_illumos INT
