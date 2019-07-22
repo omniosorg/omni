@@ -1525,7 +1525,7 @@ Operations (defaults for optional arguments are shown in []):
                           provided arguments are passed to 'build_omnios'
 
     update_kayak        - update your local kayak clone                    (uk)
-    update_extra	- update repositories in \$extra_repos             (ue)
+    update_extra	- update repositories in \$extra_repos              (ue)
     build_media [URL]   - build OmniOS install media (GZ only)             (bm)
                           Defaults to using local repo if URL not provided
 
