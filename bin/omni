@@ -1014,10 +1014,12 @@ omnios_pull_request()
 	prdata="`mktemp`"
 	[ "$branch" = "master" ] || commit_msg="$commit_msg ($branch)"
 
+	releasepr=0
 	if [[ "$commit_msg" = "Preparing for r151"* ]]; then
 		cat <<- EOM > "$prdata"
 			# Please do not merge...
 		EOM
+		releasepr=1
 	else
 		echo "$commit_msg" > "$prdata"
 	fi
@@ -1032,7 +1034,7 @@ omnios_pull_request()
 		esac
 	done
 
-	if ask "Labels?"; then
+	if [ $releasepr -eq 0 ] && ask "Labels?"; then
 		patch=`mktemp`
 		cat <<- EOM > "$patch"
 		{
