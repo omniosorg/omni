@@ -502,6 +502,8 @@ build_world()
 {
 	build_illumos &
 	build_omnios "$@"
+	echo "Waiting for illumos build..."
+	wait
 }
 
 build_media()
