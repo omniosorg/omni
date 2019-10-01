@@ -696,7 +696,7 @@ gc()
 {
 	get_repolist "$@"
 	for repo in $repolist; do
-		echo "$c_highlight[`basename "$repo"`]$c_reset"
+		echo "${c_highlight}[`basename "$repo"`]$c_reset"
 		$git -C "$repo" gc --prune=now
 	done
 }
@@ -715,7 +715,10 @@ branches()
 
 		[ "$all" -eq 1 ] || continue
 
-		merged=(`$git -C "$repo" branch --merged`)
+		merged=()
+		git -C "$repo" branch --merged | while IFS="" read -r line; do
+			merged+=("$line")
+		done
 		$git -C "$repo" branch | sed 's/..//' | while read -r  b; do
 			ismerged=0
 			for l in ${merged[*]}; do
