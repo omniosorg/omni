@@ -873,7 +873,7 @@ illumos_pull_request()
 
 	# This is just a sanity check to look for a branch name ending in
 	# yyyymmddnn
-	if echo "$_branch" | /usr/xpg4/bin/egrep -s '/201[0-9]{7}$'; then
+	if echo "$_branch" | /usr/xpg4/bin/egrep -s '/20[12][0-9]{7}$'; then
 		:
 	else
 		[ $force -eq 1 ] || abort "$_branch is not an upstream merge."
