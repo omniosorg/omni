@@ -421,16 +421,16 @@ update_world()
 illumos_tools()
 {
 	ILLUMOS_TOOLS="$illumos_clone/tools"
+	ILLUMOS_SCRIPTS="$illumos_clone/usr/src/tools/scripts"
 	[ -d "$ILLUMOS_TOOLS" ] || mkdir -p "$ILLUMOS_TOOLS"
 	for tool in nightly bldenv; do
-		# Newer illumos has these tools already in tools/
-		if [ ! -f "$ILLUMOS_TOOLS/$tool" -a \
-		    -f "$illumos_clone/usr/src/tools/scripts/$tool.sh" ]; then
-			# Old illumos tree without tools/
-			cp "$illumos_clone/usr/src/tools/scripts/$tool.sh" \
-			    "$ILLUMOS_TOOLS/$tool"
+		[ -x "$ILLUMOS_TOOLS/$tool" ] && continue
+		if [ -x "$ILLUMOS_SCRIPTS/$tool" ]; then
+			cp "$ILLUMOS_SCRIPTS/$tool" "$ILLUMOS_TOOLS/$tool"
+		elif [ -f "$ILLUMOS_SCRIPTS/$tool.sh" ]; then
+                        cp "$ILLUMOS_SCRIPTS/$tool.sh" "$ILLUMOS_TOOLS/$tool"
+			chmod +x "$ILLUMOS_TOOLS/$tool"
 		fi
-		chmod +x "$ILLUMOS_TOOLS/$tool"
 	done
 }
 
