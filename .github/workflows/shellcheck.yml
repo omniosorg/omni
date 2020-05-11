@@ -10,7 +10,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-      
+
     - name: shellcheck
       env:
         # SC2006: Use $(..) instead of legacy `..`.
