@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: shellcheck
+      env:
+        # SC2006: Use $(..) instead of legacy `..`.
+        # SC2166: Prefer [ p ] && [ q ] as [ p -a q ] is not well defined.
+        # SC2196: egrep is non-standard and deprecated. Use grep -E instead.
+        # SC2197: fgrep is non-standard and deprecated. Use grep -F instead.
+        # SC2015: Note that A && B || C is not if-then-else. C may run when A is true
+        SHELLCHECK_OPTS: -e SC2006 -e SC2166 -e SC2196 -e SC2197 -e SC2015
+      run: |
+        shellcheck setup
+        shellcheck bin/omni
