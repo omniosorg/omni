@@ -1,0 +1,77 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  build:
+    name: Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Submodules
+      run: git submodule update --init .
+
+    - name: Set version string
+      id: version
+      run: |
+         echo "GITHUB_REPOSITORY = $GITHUB_REPOSITORY"
+         echo "GITHUB_REF = $GITHUB_REF"
+         echo "::set-output name=v::${GITHUB_REPOSITORY##*/}-${GITHUB_REF##*/}"
+         echo "::set-output name=b::${GITHUB_REF##*/}"
+
+    - name: Create archive
+      run: tar cvf release.tar --owner=root --group=root --exclude '.git*' --transform 's^.^${{ steps.version.outputs.v }}^' --show-stored-names .
+
+    - name: Compress
+      run: |
+           gzip -9vc release.tar > release.tar.gz
+           bzip2 -9vc release.tar > release.tar.bz2
+           xz -9vc release.tar > release.tar.xz
+
+    - name: Create release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.b }}
+        release_name: Release ${{ steps.version.outputs.b }}
+        draft: false
+        prerelease: false
+
+    - name: Upload gz
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: release.tar.gz
+        asset_name: ${{ steps.version.outputs.v }}.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload bz2
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: release.tar.bz2
+        asset_name: ${{ steps.version.outputs.v }}.tar.bz2
+        asset_content_type: application/bzip2
+
+    - name: Upload xz
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: release.tar.xz
+        asset_name: ${{ steps.version.outputs.v }}.tar.xz
+        asset_content_type: application/xz
+
