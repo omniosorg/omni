@@ -99,8 +99,7 @@ c_error="`/usr/gnu/bin/tput setaf 1`"
 c_reset="`/usr/gnu/bin/tput sgr0`"
 set -e
 
-show_config()
-{
+function show_config {
 	cat << EOM
 
 Current configuration ($CFGFILE):
@@ -124,15 +123,13 @@ Current configuration ($CFGFILE):
 EOM
 }
 
-banner()
-{
+function banner {
 	echo
 	echo "$c_banner*** $*$c_reset"
 	echo
 }
 
-abort()
-{
+function abort {
 	(
 		echo
 		echo "$c_error*** $*$c_reset"
@@ -141,8 +138,7 @@ abort()
 	exit 1
 }
 
-is()
-{
+function is {
 	case "$@" in
 	    dev)	[ "$role" -gt 1 ] && return 0 ;;
 	    guardian)	[ "$role" -gt 2 ] && return 0 ;;
@@ -150,8 +146,7 @@ is()
 	return 1
 }
 
-ask()
-{
+function ask {
 	typeset a=$answer
 
 	echo "$c_highlight$* (y/n) $c_reset\\c"
@@ -163,8 +158,7 @@ ask()
 	[ "$a" = "y" ]
 }
 
-response()
-{
+function response {
 	typeset a=$answer
 	typeset msg="$1"
 	# shellcheck disable=SC2034
@@ -179,40 +173,34 @@ response()
 	echo "$a"
 }
 
-shorten_url()
-{
+function shorten_url {
 	curl -s --data-urlencode "url=$*" https://i.no.de | cut -d '"' -f8
 }
 
-anything_to_push()
-{
+function anything_to_push {
 	[ "$gituser" = omniosorg ] && return 1
 	$git for-each-ref --format="%(refname:short) %(push:track)" refs/heads \
 	    | egrep -s '\[ahead '
 }
 
-repo_branch()
-{
+function repo_branch {
 	typeset repo=${1:?repo}
 	$git -C "$repo" symbolic-ref --short HEAD
 }
 
-reset_illumos_branch()
-{
+function reset_illumos_branch {
 	[ -n "`$git -C "$illumos_clone" ls-files closed`" ] && \
 	    $git -C "$illumos_clone" checkout closed/README.ON-BINARIES.i386 \
 	    || true
 }
 
-joyent_commit()
-{
+function joyent_commit {
 	$git -C "$illumos_clone" show master:README.OmniOS | \
 	    grep 'Last illumos-joyent' | \
 	    awk '{print $4}'
 }
 
-check_repo()
-{
+function check_repo {
 	typeset repo="${1:?}"
 	typeset branch="${2:?}"
 
@@ -229,8 +217,7 @@ check_repo()
 	fi
 }
 
-check_child()
-{
+function check_child {
 	typeset repo="${1:?}"
 	typeset branch="${2:?}"
 
@@ -241,8 +228,7 @@ check_child()
 	    || abort "$_branch is not a child of $branch"
 }
 
-update_illumos_bloody()
-{
+function update_illumos_bloody {
 	(
 		cd "$illumos_clone"
 		reset_illumos_branch
@@ -271,8 +257,7 @@ update_illumos_bloody()
 	)
 }
 
-update_illumos_stable()
-{
+function update_illumos_stable {
 	(
 		cd "$illumos_clone"
 		reset_illumos_branch
@@ -289,8 +274,7 @@ update_illumos_stable()
 	)
 }
 
-update_illumos()
-{
+function update_illumos {
 	check_repo "$illumos_clone" "$branch"
 	banner "Updating illumos-omnios $release branch"
 	if [ "$release" = bloody ]; then
@@ -300,8 +284,7 @@ update_illumos()
 	fi
 }
 
-ud_process()
-{
+function ud_process {
 	typeset arg="$1"
 	typeset url="$2"
 
@@ -319,8 +302,7 @@ ud_process()
 	esac
 }
 
-upstream_diff()
-{
+function upstream_diff {
 	typeset arg="$1"
 
 	[ "$release" != bloody ] \
@@ -356,8 +338,7 @@ upstream_diff()
 	)
 }
 
-update_omnios()
-{
+function update_omnios {
         check_repo "$omnios_clone" "$branch"
 	banner "Updating $release OmniOS build"
         (
@@ -375,8 +356,7 @@ update_omnios()
 	)
 }
 
-update_kayak()
-{
+function update_kayak {
 	check_repo "$kayak_clone" "$branch"
 	banner "Updating $release kayak"
 	(
@@ -391,8 +371,7 @@ update_kayak()
 	)
 }
 
-update_extra()
-{
+function update_extra {
 	for repo in $extra_repos; do
 		check_repo "$repo" "$branch"
 		banner "Updating $release `basename $repo`"
@@ -410,16 +389,14 @@ update_extra()
 	done
 }
 
-update_world()
-{
+function update_world {
 	update_illumos && \
 	update_omnios && \
 	update_kayak && \
 	update_extra
 }
 
-illumos_tools()
-{
+function illumos_tools {
 	ILLUMOS_TOOLS="$illumos_clone/tools"
 	ILLUMOS_SCRIPTS="$illumos_clone/usr/src/tools/scripts"
 	[ -d "$ILLUMOS_TOOLS" ] || mkdir -p "$ILLUMOS_TOOLS"
@@ -434,21 +411,18 @@ illumos_tools()
 	done
 }
 
-terminate_illumos()
-{
+function terminate_illumos {
 	banner "Stopping illumos build, please wait..."
 	kill "$nightlypid" 2>/dev/null
 }
 
-env_illumos()
-{
+function env_illumos {
 	illumos_tools
 	cd "$illumos_clone"
 	"$ILLUMOS_TOOLS/bldenv" "$illumos_env" "$@"
 }
 
-build_illumos()
-{
+function build_illumos {
 	typeset env="${1:-${illumos_env}}"
 
 	lockf="$illumos_clone/log/nightly.lock"
@@ -485,8 +459,7 @@ build_illumos()
 	sleep 10
 }
 
-build_omnios()
-{
+function build_omnios {
 	typeset arg="${*:-${omnios_buildarg}}"
 	[[ "$arg" = -? ]] && arg+=" ${omnios_buildarg}"
 	(
@@ -497,16 +470,14 @@ build_omnios()
 	)
 }
 
-build_world()
-{
+function build_world {
 	build_illumos &
 	build_omnios "$@"
 	echo "Waiting for illumos build..."
 	wait
 }
 
-build_media()
-{
+function build_media {
 	[ "`zonename`" = "global" ] || \
 	    abort "Install media can only be built in the global zone."
 
@@ -534,8 +505,7 @@ build_media()
 	)
 }
 
-onu_destroy()
-{
+function onu_destroy {
 	ask "Destroy all unused ONU boot environments?" || exit 0
 	beadm list -H | awk -F\; '
 	    $1 ~ /-onu$/ && $3 !~ /N/ { print $1}
@@ -545,8 +515,7 @@ onu_destroy()
 	done
 }
 
-onu_illumos()
-{
+function onu_illumos {
 	pkgdir="$illumos_clone/packages/i386/nightly-nd"
 	while [[ "$1" = -* ]]; do
 		case $1 in
@@ -574,8 +543,7 @@ onu_illumos()
 	$PFEXEC /opt/onbld/bin/onu -t "$be-onu" -d "$pkgdir"
 }
 
-build_gitignore()
-{
+function build_gitignore {
 	# Command only applies to branches which are forked from master
 	check_child "$illumos_clone" master
 
@@ -597,8 +565,7 @@ build_gitignore()
 	)
 }
 
-build_cscope()
-{
+function build_cscope {
 	illumos_tools
 	"$ILLUMOS_TOOLS/bldenv" "$illumos_env" \
 	    "cd $illumos_clone/usr/src && dmake setup" > /dev/null
@@ -606,8 +573,7 @@ build_cscope()
 	    "cd $illumos_clone/usr/src && dmake cscope.out"
 }
 
-mail_msg()
-{
+function mail_msg {
 	[ ! -d "$illumos_clone/log" ] && abort "No log directory present."
 	(
 		cd "$illumos_clone/log"
@@ -618,13 +584,11 @@ mail_msg()
 	)
 }
 
-view_mail_msg()
-{
+function view_mail_msg {
 	less -X "`mail_msg`"
 }
 
-reset_buildrepo()
-{
+function reset_buildrepo {
 	echo "Clearing build IPS repository..."
 	[ -d "$omnios_buildrepo" ] && rm -rf "$omnios_buildrepo"
 	pkgrepo create "$omnios_buildrepo"
@@ -632,8 +596,7 @@ reset_buildrepo()
 	pkgrepo -s "$omnios_buildrepo" info
 }
 
-cleanup_omnios()
-{
+function cleanup_omnios {
 	echo "Clearing temporary build directory..."
 	[ -d "$omnios_buildtmp" ] && rm -rf "$omnios_buildtmp"
 	[ -d "$omnios_clone/tmp.repo" ] && rm -rf "$omnios_clone/tmp.repo"
@@ -644,8 +607,7 @@ cleanup_omnios()
 	find "$omnios_clone" -type l -name tmp -exec rm -f {} +
 }
 
-cleanup_illumos()
-{
+function cleanup_illumos {
 	echo "Cleaning illumos-omnios..."
 	illumos_tools
 	"$ILLUMOS_TOOLS/bldenv" "$illumos_env" \
@@ -664,8 +626,7 @@ cleanup_illumos()
 	fi
 }
 
-cleanup()
-{
+function cleanup {
 	typeset target="${1:-all}"
 
 	case "$target" in
@@ -676,8 +637,7 @@ cleanup()
 	esac
 }
 
-get_repolist()
-{
+function get_repolist {
 	[ -z "$1" ] && set -- illumos omnios kayak extra
 
 	repolist=
@@ -691,8 +651,7 @@ get_repolist()
 	done
 }
 
-gc()
-{
+function gc {
 	get_repolist "$@"
 	for repo in $repolist; do
 		echo "${c_highlight}[`basename "$repo"`]$c_reset"
@@ -700,8 +659,7 @@ gc()
 	done
 }
 
-branches()
-{
+function branches {
 	all=0
 	[ "$1" = "-a" ] && all=1 && shift
 	get_repolist "$@"
@@ -731,8 +689,7 @@ branches()
 	done
 }
 
-update_hooks()
-{
+function update_hooks {
 	# shellcheck disable=SC2043
 	for hook in prepare-commit-msg; do
 		echo "Updating $hook hook"
@@ -742,8 +699,9 @@ update_hooks()
 	done
 }
 
-merge_gate()
-{
+function merge_gate {
+	typeset commit="${1:-upstream_gate}"
+
 	ask "Merge changes from upstream illumos-gate?" || exit 0
 	check_repo "$illumos_clone" "$branch"
 	update_hooks
@@ -752,12 +710,11 @@ merge_gate()
 		cd "$illumos_clone"
 		$git checkout -b "$_branch" || exit 1
 		check_repo "$illumos_clone" "$_branch"
-		$git merge upstream_gate
+		$git merge $commit
 	) || exit 1
 }
 
-abort_gate()
-{
+function abort_gate {
 	_branch="`repo_branch "$illumos_clone"`"
 	[[ $_branch = upstream_merge/* ]] || \
 	    abort "On wrong branch, $_branch (is merge in progress?)"
@@ -772,16 +729,14 @@ abort_gate()
 }
 
 # Should use `jq` - add to omnios-extra?
-json_get_key()
-{
+function json_get_key {
 	typeset file="$1"
 	typeset key="$2"
 
 	grep "\"$key\":" "$file" | cut -d'"' -f4 | head -1
 }
 
-github_request()
-{
+function github_request {
 	typeset auth="$1"
 	typeset api="$2"
 	typeset data="$3"
@@ -804,8 +759,7 @@ github_request()
 	echo "$op"
 }
 
-create_pull_request()
-{
+function create_pull_request {
 	typeset token="$1"
 	typeset duser="$2"
 	typeset drepo="$3"
@@ -864,8 +818,7 @@ create_pull_request()
 	echo "    $prurl"
 }
 
-illumos_pull_request()
-{
+function illumos_pull_request {
 	_branch="`repo_branch "$illumos_clone"`"
 	typeset force
 	[ "$1" = "-f" ] && shift && force=1 || force=0
@@ -971,8 +924,7 @@ EOM
 	rm -f "$prdata" "$patch"
 }
 
-omnios_pull_request()
-{
+function omnios_pull_request {
 	_branch="`repo_branch "$omnios_clone"`"
 
 	[ "$_branch" = "$branch" ] && abort "Not on suitable branch."
@@ -1069,15 +1021,13 @@ omnios_pull_request()
 	$git -C "$omnios_clone" checkout "$branch"
 }
 
-lx_check_branch()
-{
+function lx_check_branch {
 	typeset _branch="`repo_branch "$illumos_clone"`"
 	[[ "$_branch" =~ (joyent|upstream)_merge/* ]] || \
 	    abort "On wrong branch, $_branch (have you run lx_begin?)"
 }
 
-lx_begin()
-{
+function lx_begin {
 	typeset cbranch="`repo_branch "$illumos_clone"`"
 	[[ "$cbranch" != "$branch" && "$cbranch" != upstream_merge/* ]] \
 	    && abort "Not on a suitable branch to begin lx merge ($cbranch)"
@@ -1127,8 +1077,7 @@ lx_begin()
 	lx_stat
 }
 
-lx_stat()
-{
+function lx_stat {
 	lx_check_branch
 	[ -f "${ij}-ALL-commits" ] || abort "No LX merge session in progress"
 
@@ -1161,8 +1110,7 @@ lx_stat()
 	echo "$c_reset"
 }
 
-lx_pick()
-{
+function lx_pick {
 	typeset cpargs="$*"
 	lx_check_branch
 
@@ -1225,8 +1173,7 @@ lx_pick()
 	) || exit 1
 }
 
-lx_back()
-{
+function lx_back {
 	lx_check_branch
 
 	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
@@ -1265,8 +1212,7 @@ $jhash
 	lx_stat
 }
 
-lx_end()
-{
+function lx_end {
 	lx_check_branch
 	[ -f "${ij}-TODO-commits" ] || abort "No LX merge session in progress"
 	[ -s "${ij}-TODO-commits" ] && \
@@ -1318,8 +1264,7 @@ lx_end()
 	)
 }
 
-lx_abort()
-{
+function lx_abort {
 	[ -f "${ij}-ALL-commits" ] || abort "No LX merge session in progress"
 	lx_check_branch
 
@@ -1334,8 +1279,7 @@ lx_abort()
 	banner "LX merge aborted and $_branch branch deleted."
 }
 
-ctfextract()
-{
+function ctfextract {
 	$CTFDUMP -t "$@" 2>/dev/null | sed -n '
 		/^  </ {
 			s/ refers to.*//
@@ -1344,8 +1288,7 @@ ctfextract()
 	'
 }
 
-ctfcompare()
-{
+function ctfcompare {
 	typeset proto="$1"
 	typeset object="$2"
 
@@ -1363,8 +1306,7 @@ ctfcompare()
 	fi
 }
 
-ctfcheck()
-{
+function ctfcheck {
 	proto="$illumos_clone/proto/root_i386-nd"
 	[ -d "$proto" ] || abort "No proto root found @ $proto"
 
@@ -1390,8 +1332,7 @@ ctfcheck()
 	done
 }
 
-fnfind_obj()
-{
+function fnfind_obj {
 	typeset object="$1"
 	typeset token="$2"
 
@@ -1412,8 +1353,7 @@ fnfind_obj()
 	fi
 }
 
-fnfind()
-{
+function fnfind {
 	typeset token="$1"
 
 	[ -n "$token" ] || abort "Syntax: omni fnfind <function>"
@@ -1432,8 +1372,7 @@ fnfind()
 	done
 }
 
-expand_pkg()
-{
+function expand_pkg {
 	typeset pkg="${1:?pkg}"; shift
 	PKGURL="${1:-file://$omnios_buildrepo}"
 
@@ -1448,8 +1387,7 @@ expand_pkg()
 	done
 }
 
-patch_motd()
-{
+function patch_motd {
 	typeset tmpdir="`expand_pkg SUNWcs "$@"`"
 
 	cd "$tmpdir" || exit 1
@@ -1474,18 +1412,15 @@ patch_motd()
 	echo "Updated SUNWcs is now in your local repo ready to stage."
 }
 
-igrep()
-{
+function igrep {
 	$git -C "$illumos_clone" log --grep "$@"
 }
 
-ogrep()
-{
+function ogrep {
 	$git -C "$omnios_clone" log --grep "$@"
 }
 
-push_upstreams()
-{
+function push_upstreams {
 	check_repo "$illumos_clone" "$branch"
 	ask "Push upstream branches to github/omniosorg?" || exit 0
 	(
@@ -1498,13 +1433,11 @@ push_upstreams()
 	)
 }
 
-version()
-{
+function version {
 	echo $OMNIVER
 }
 
-help()
-{
+function help {
 	cat << EOM
 omni [-n|-y] <operation>
 
@@ -1615,7 +1548,7 @@ case $op in
 	gc)				gc "$@" ;;
 	rr|reset_repo|repo_reset)	reset_buildrepo ;;
 	ud|upstream_diff)		is dev && upstream_diff "$@" || help ;;
-	mg|merge_gate)			is dev && merge_gate || help ;;
+	mg|merge_gate)			is dev && merge_gate "$@" || help ;;
 	ag|abort_gate)			is dev && abort_gate || help ;;
 	pr|pull_request)		is dev && illumos_pull_request "$@" \
 					    || help ;;
