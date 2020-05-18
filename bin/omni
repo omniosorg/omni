@@ -710,7 +710,7 @@ function merge_gate {
 		cd "$illumos_clone"
 		$git checkout -b "$_branch" || exit 1
 		check_repo "$illumos_clone" "$_branch"
-		$git merge $commit
+		$git merge "$commit"
 	) || exit 1
 }
 
