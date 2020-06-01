@@ -33,6 +33,9 @@ jobs:
            gzip -9vc release.tar > release.tar.gz
            bzip2 -9vc release.tar > release.tar.bz2
            xz -9vc release.tar > release.tar.xz
+           sha256sum release.tar.gz > release.tar.gz.sha256
+           sha256sum release.tar.bz2 > release.tar.bz2.sha256
+           sha256sum release.tar.xz > release.tar.xz.sha256
 
     - name: Create release
       id: create_release
@@ -73,5 +76,35 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: release.tar.xz
         asset_name: ${{ steps.version.outputs.v }}.tar.xz
+        asset_content_type: application/xz
+
+    - name: Upload gz checksum
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: release.tar.gz.sha256
+        asset_name: ${{ steps.version.outputs.v }}.tar.gz.sha256
+        asset_content_type: application/gzip
+
+    - name: Upload bz2 checksum
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: release.tar.bz2.sha256
+        asset_name: ${{ steps.version.outputs.v }}.tar.bz2.sha256
+        asset_content_type: application/bzip2
+
+    - name: Upload xz checksum
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: release.tar.xz.sha256
+        asset_name: ${{ steps.version.outputs.v }}.tar.xz.sha256
         asset_content_type: application/xz
 
