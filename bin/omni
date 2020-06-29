@@ -1366,6 +1366,7 @@ function fnfind {
 		platform/i86pc/kernel/amd64/unix \
 		kernel/drv/amd64 \
 		kernel/misc/amd64 \
+		kernel/socketmod/amd64 \
 		usr/kernel/drv/amd64 \
 	; do
 		fnfind_obj "$proto/$o" "$token"
