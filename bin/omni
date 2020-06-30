@@ -1414,11 +1414,11 @@ function patch_motd {
 }
 
 function igrep {
-	$git -C "$illumos_clone" log --grep "$@"
+	$git -C "$illumos_clone" log --no-merges --grep "$@"
 }
 
 function ogrep {
-	$git -C "$omnios_clone" log --grep "$@"
+	$git -C "$omnios_clone" log --no-merges --grep "$@"
 }
 
 function push_upstreams {
