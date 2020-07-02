@@ -21,7 +21,7 @@ jobs:
          echo "GITHUB_REF = $GITHUB_REF"
          echo "::set-output name=v::${GITHUB_REPOSITORY##*/}-${GITHUB_REF##*/}"
          echo "::set-output name=b::${GITHUB_REF##*/}"
-         sed -i "/OMNIVER/s/master/${GITHUB_REF##*/v}" bin/omni
+         sed -i "/OMNIVER/s/master/${GITHUB_REF##*/v}/" bin/omni
 
     - name: Create archive
       run: tar cvf release.tar --owner=root --group=root --exclude '.git*' --transform 's^.^${{ steps.version.outputs.v }}^' --show-stored-names .
