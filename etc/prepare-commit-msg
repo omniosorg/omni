@@ -25,7 +25,11 @@ fi
 ) > $tf
 
 firstblank="`egrep -n '^$' "$file" | sed 's/://; q'`"
-[ -n "$firstblank" ] && sed -i "${firstblank}r$tf" "$file"
+if [ -z "$firstblank" ]; then
+	(echo; cat $tf)  >> $file
+else
+	sed -i "${firstblank}r$tf" "$file"
+fi
 
 rm -f $tf
 
