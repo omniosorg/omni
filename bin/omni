@@ -1368,6 +1368,7 @@ function fnfind {
 		kernel/misc/amd64 \
 		kernel/socketmod/amd64 \
 		usr/kernel/drv/amd64 \
+		usr/kernel/fs/amd64 \
 	; do
 		fnfind_obj "$proto/$o" "$token"
 	done
