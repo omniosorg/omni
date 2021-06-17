@@ -521,6 +521,7 @@ function onu_destroy {
 
 function onu_illumos {
 	pkgdir="$illumos_clone/packages/i386/nightly-nd"
+	args=
 	while [[ "$1" = -* ]]; do
 		case $1 in
 		    -d)
@@ -528,6 +529,9 @@ function onu_illumos {
 			;;
 		    -nd|"")
 			pkgdir="$illumos_clone/packages/i386/nightly-nd"
+			;;
+		    -p)
+			args+="-p "
 			;;
 		    *)
 			abort "Unknown argument ($1) to onu."
@@ -544,7 +548,7 @@ function onu_illumos {
 		((be = be + 1))
 	done
 	banner "ONU to new BE $be-onu"
-	$PFEXEC /opt/onbld/bin/onu -t "$be-onu" -d "$pkgdir"
+	$PFEXEC /opt/onbld/bin/onu -t "$be-onu" -d "$pkgdir" $args
 }
 
 function build_gitignore {
