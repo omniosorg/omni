@@ -195,9 +195,13 @@ function reset_illumos_branch {
 }
 
 function joyent_commit {
-	$git -C "$illumos_clone" show master:README.OmniOS | \
-	    grep 'Last illumos-joyent' | \
-	    awk '{print $4}'
+	if [ -n "$FORCE_JOYENT_COMMIT" ]; then
+		echo "$FORCE_JOYENT_COMMIT"
+	else
+		$git -C "$illumos_clone" show master:README.OmniOS | \
+		    grep 'Last illumos-joyent' | \
+		    awk '{print $4}'
+	fi
 }
 
 function check_repo {
