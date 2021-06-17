@@ -86,7 +86,7 @@ else
 	[ -z "$relnum" ] && relnum=151999
 fi
 
-git='/usr/bin/git --no-pager'
+git='/usr/bin/git --no-pager -c color.ui=always'
 gitp=/usr/bin/git
 
 export ij="$lxdata_clone/ij"
