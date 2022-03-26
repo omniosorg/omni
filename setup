@@ -9,7 +9,7 @@
 # source. A copy of the CDDL is also available via the Internet at
 # http://www.illumos.org/license/CDDL.
 
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2022 OmniOS Community Edition (OmniOSce) Association.
 
 # Setup utility for creating an OmniOS build environment.
 
@@ -22,21 +22,21 @@ role=1
 export LC_ALL=C
 
 # Determine the running OmniOS release.
-version=`uname -v`
+osid=`awk -F= '$1 == "ID" { print $2 }' /etc/os-release`
+version=`awk -F= '$1 == "VERSION" { print $2 }' /etc/os-release`
+relnum="${version//[a-z]/}"
 
-if [[ "$version" != omnios-* ]]; then
+if [ "$osid" != omnios ]; then
 	echo "This does not appear to be an OmniOS system."
 	exit 1
 fi
 
-release=`echo "$version" | cut -d- -f2`
-branch=$release
-if [ "$release" = master ]; then
+if (( relnum % 2 == 0 )); then
+	release="r$relnum"
+	branch=$relnum
+else
 	release=bloody
 	branch=master
-	relnum="`head -1 /etc/release | awk '{print $3}' | cut -c2-`"
-else
-	relnum="${release:1}"
 fi
 
 ask()
@@ -159,7 +159,7 @@ EOM
 install_env()
 {
 	echo "--- Install omnios.env"
-	if [ $relnum -lt 151031 ]; then
+	if [ "$relnum" -lt 151031 ]; then
 		template="template-gcc4.env"
 	else
 		template="template-gcc7.env"
@@ -169,11 +169,11 @@ install_env()
 		s^__BUILDNUM__^$relnum^
 	" < "$mydir/etc/$template" > "$wd/omnios.env"
 	# Translate the GCC root variable back when building old versions
-	if [ $relnum -lt 151027 ]; then
+	if [ "$relnum" -lt 151027 ]; then
 		sed -i 's/GNUC_ROOT/GCC_ROOT/g' "$wd/omnios.env"
 	fi
 	# Enable the shadow compiler from r151029
-	if [ $relnum -ge 151029 ]; then
+	if [ "$relnum" -ge 151029 ]; then
 		sed -i '/CW_NO_SHADOW/d' "$wd/omnios.env"
 	fi
 }
