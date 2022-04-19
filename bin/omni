@@ -13,9 +13,9 @@
 #
 # }}}
 #
-# Copyright 2018 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2022 OmniOS Community Edition (OmniOSce) Association.
 
-export PATH=/usr/bin:/usr/sbin
+export PATH=/usr/bin:/usr/sbin:/opt/ooce/bin
 export OMNIVER=master
 export SHELL=/bin/sh
 ghraw=https://raw.githubusercontent.com/omniosorg/omni/master
@@ -512,6 +512,74 @@ function build_media {
 			    PREBUILT_ILLUMOS="$illumos_clone"
 		fi
 	)
+}
+
+typeset -A medialist=(
+	[miniroot/platform/i86pc/kernel/amd64/unix]="omnios-@V@.unix"
+	[miniroot.gz]="omnios-@V@.miniroot.gz"
+	[*.iso]="omnios-@V@.iso"
+	[*.usb-dd]="omnios-@V@.usb-dd"
+	[kayak_*.ngz.zfs.xz]="omnios-@V@.ngz.zfs.xz"
+	[kayak_*.zfs.xz]="omnios-@V@.zfs.xz"
+	[cloud-*.raw.zst]="omnios-@V@.cloud.raw.zst"
+	[cloud-*.vhd.zst]="omnios-@V@.cloud.vhd.zst"
+	[cloud-*.vmdk.zst]="omnios-@V@.cloud.vmdk"
+	[cloud-*.zfs.zst]="omnios-@V@.cloud.zfs.zst"
+	[*.bhyve.zst]="omnios-@V@.bhyve.zst"
+	[*.azure.vhd.zst]="omnios-@V@.azure.vhd.zst"
+)
+
+function sort_media {
+	[ "`zonename`" = "global" ] || \
+	    abort "Install media can only be built in the global zone."
+
+	typeset v="${1}"
+	typeset p="${2}"
+
+	typeset src=`zfs get -H -o value mountpoint $kayak_image`
+	[ -d "$src" ] || abort "Cannot determine mountpoint for $kayak_image"
+
+	if [ -z "$v" ]; then
+		v=`awk -F= '$1 == "VERSION" { print $2 }' /etc/os-release`
+		[ "$release" = bloody ] && v=`date +bloody-%Y%m%d`
+	fi
+
+	[ -z "$p" ] && p="/tmp/media_$v"
+	rm -rf "$p"
+	mkdir -p "$p" || abort "Could not mkdir $p"
+
+	banner "Sorting media $v to $p"
+
+	typeset m=
+	for m in "${!medialist[@]}"; do
+		typeset tgt="${medialist[$m]/@V@/$v}"
+		typeset f=
+		for f in $src/$m; do
+			if [ ! -f "$f" ]; then
+				echo "* No matches for $m"
+				continue
+			fi
+			# Special case due to ambiguous filename for GZ
+			[[ "$f" == *.ngz.* && "$tgt" != *.ngz.* ]] && continue
+			echo "$f -> $tgt"
+			if [[ "$f" == *.zst && "$tgt" != *.zst ]]; then
+				zstd -dc "$f" > "$p/$tgt"
+			else
+				cp "$f" "$p/$tgt"
+			fi
+			chmod 644 "$p/$tgt"
+			digest -a sha256 "$p/$tgt" > "$p/$tgt.sha256"
+			# For .xz files, also generate a pbzip2 variant
+			# which can be decompressed much faster
+			# (tribblix uses these for "alien" zones)
+			if [[ "$tgt" == *.xz ]]; then
+				typeset new="${tgt/%.xz/.bz2}"
+				echo "    rezip -> $new"
+				xz -dc "$p/$tgt" | pbzip2 -9fc - > "$p/$new"
+				digest -a sha256 "$p/$new" > "$p/$new.sha256"
+			fi
+		done
+	done
 }
 
 function onu_destroy {
@@ -1494,6 +1562,9 @@ Operations (defaults for optional arguments are shown in []):
     update_extra	- update repositories in \$extra_repos              (ue)
     build_media [URL]   - build OmniOS install media (GZ only)             (bm)
                           Defaults to using local repo if URL not provided
+    sort_media [v] [p]  - sort/rename install media (GZ only)              (sm)
+                          [v] - version tag, e.g. r151038z
+                          [p] - target path, defaults to /tmp/media_<v>
 
     onu [-d|-nd] [name] - Create a new boot environment from the locally
                           built copy of omnios-illumos. Non-debug packages
@@ -1567,6 +1638,7 @@ case $op in
 	uk|update_kayak)		update_kayak ;;
 	ue|update_extra)		update_extra ;;
 	bm|build_media)			build_media "$@" ;;
+	sm|sort_media)			sort_media "$@" ;;
 	mail_msg|mm)			view_mail_msg ;;
 	it|illumos_tools)		illumos_tools ;;
 	onu)				onu_illumos "$@" ;;
