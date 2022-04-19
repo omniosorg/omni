@@ -432,7 +432,7 @@ function build_illumos {
 	typeset benv="`basename "$env"`"
 	banner "Starting illumos-omnios $release build... ($benv)"
 
-	typeset _ws="`grep 'export CODEMGR_WS=' $env | head -1 | cut -d= -f2`"
+	typeset _ws="`grep 'export CODEMGR_WS=' "$env" | head -1 | cut -d= -f2`"
 	[ -d "$_ws" ] || _ws="$illumos_clone"
 
 	echo "Workspace: $_ws"
@@ -553,7 +553,7 @@ function onu_illumos {
 		((be = be + 1))
 	done
 	banner "ONU to new BE $be-onu"
-	$PFEXEC /opt/onbld/bin/onu -t "$be-onu" -d "$pkgdir" $args
+	$PFEXEC /opt/onbld/bin/onu -t "$be-onu" -d "$pkgdir" "$args"
 }
 
 function build_gitignore {
@@ -981,7 +981,7 @@ function omnios_pull_request {
 	prdata="`mktemp`"
 	[ "$branch" = "master" ] || commit_msg="$commit_msg ($branch)"
 
-	revs=`$git -C "$omnios_clone" log --format=%H @{-1}..HEAD`
+	revs=`$git -C "$omnios_clone" log --format=%H "@{-1}..HEAD"`
 
 	releasepr=0
 	if [[ "$commit_msg" = "Preparing for r151"* ]]; then
@@ -991,7 +991,7 @@ function omnios_pull_request {
 		releasepr=1
 		prtitle="$commit_msg"
 	else
-		if [ "`echo $revs | wc -w`" -ne 1 ]; then
+		if [ "`echo "$revs" | wc -w`" -ne 1 ]; then
 			banner "Multiple commits found"
 			prtitle="Core package updates"
 			cp /dev/null "$prdata"
