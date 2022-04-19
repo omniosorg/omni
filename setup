@@ -161,8 +161,10 @@ install_env()
 	echo "--- Install omnios.env"
 	if [ "$relnum" -lt 151031 ]; then
 		template="template-gcc4.env"
-	else
+	elif [ "$relnum" -lt 151041 ]; then
 		template="template-gcc7.env"
+	else
+		template="template-gcc10.env"
 	fi
 	sed "
 		s^__WORKINGTREE__^$wd^
