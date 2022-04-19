@@ -981,25 +981,37 @@ function omnios_pull_request {
 	prdata="`mktemp`"
 	[ "$branch" = "master" ] || commit_msg="$commit_msg ($branch)"
 
+	revs=`$git -C "$omnios_clone" log --format=%H @{-1}..HEAD`
+
 	releasepr=0
 	if [[ "$commit_msg" = "Preparing for r151"* ]]; then
 		cat <<- EOM > "$prdata"
 			# Please do not merge...
 		EOM
 		releasepr=1
+		prtitle="$commit_msg"
 	else
-		echo "$commit_msg" > "$prdata"
+		if [ "`echo $revs | wc -w`" -ne 1 ]; then
+			banner "Multiple commits found"
+			prtitle="Core package updates"
+			cp /dev/null "$prdata"
+		else
+			echo "$commit_msg" > "$prdata"
+			prtitle="$commit_msg"
+		fi
 	fi
 
 	r=
-	while [ "$r" != 'y' ]; do
-		banner "`cat "$prdata"`"
-		r="`response 'Proceed? (y[es]/e[dit]/a[bort])' 'yea'`"
-		case "$r" in
-			e) "${EDITOR:-vi}" "$prdata" ;;
-			a) abort "PR aborted." ;;
-		esac
-	done
+	if [ -s "$prdata" ]; then
+		while [ "$r" != 'y' ]; do
+			banner "`cat "$prdata"`"
+			r="`response 'Proceed? (y[es]/e[dit]/a[bort])' 'yea'`"
+			case "$r" in
+				e) "${EDITOR:-vi}" "$prdata" ;;
+				a) abort "PR aborted." ;;
+			esac
+		done
+	fi
 
 	if [ $releasepr -eq 0 ] && ask "Labels?"; then
 		patch=`mktemp`
@@ -1026,7 +1038,7 @@ function omnios_pull_request {
 	create_pull_request "$token" \
 		omniosorg omnios-build "$branch" \
 		"$gituser" "$_branch" \
-		"$commit_msg" \
+		"$prtitle" \
 		"$prdata" "$patch"
 
 	rm -f "$prdata" "$patch"
