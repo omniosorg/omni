@@ -429,19 +429,24 @@ function env_illumos {
 function build_illumos {
 	typeset env="${1:-${illumos_env}}"
 
-	lockf="$illumos_clone/log/nightly.lock"
-	if [ -h "$lockf" ]; then
-		readlink "$lockf" | IFS=. read -r host user pid
-		kill -0 "$pid" 2>/dev/null \
-		    && abort "Illumos build already in progress ($host/$user)."
-		banner "Stale build lockfile detected, ignoring."
-	fi
-
 	typeset benv="`basename "$env"`"
 	banner "Starting illumos-omnios $release build... ($benv)"
 
+	typeset _ws="`grep 'export CODEMGR_WS=' $env | head -1 | cut -d= -f2`"
+	[ -d "$_ws" ] || _ws="$illumos_clone"
+
+	echo "Workspace: $_ws"
+
+	lockf="$_ws/log/nightly.lock"
+	if [ -h "$lockf" ]; then
+		readlink "$lockf" | IFS=. read -r host user pid
+		kill -0 "$pid" 2>/dev/null \
+		    && abort "illumos build already in progress ($host/$user)."
+		banner "Stale build lockfile detected, ignoring."
+	fi
+
 	# Remove any stale log file
-	export logf="$illumos_clone/log/nightly.log"
+	export logf="$_ws/log/nightly.log"
 	[ -f "$logf" ] && rm -f "$logf"
 
 	illumos_tools
