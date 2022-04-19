@@ -227,7 +227,7 @@ function check_child {
 
 	typeset _branch="`repo_branch "$repo"`"
 
-	$git -C "$repo" branch --contains "$branch" \
+	$gitp -C "$repo" branch --contains "$branch" \
 	    | egrep -s "^\\*? *$_branch\$" \
 	    || abort "$_branch is not a child of $branch"
 }
@@ -565,7 +565,7 @@ function build_gitignore {
 
 		sed -i '/BEGIN AUTO-GENERATED/,$d' .gitignore
 		echo "# BEGIN AUTO-GENERATED" >> .gitignore
-		$git status --short --branch -unormal | \
+		$gitp status --short --branch -unormal | \
 		    grep '^?? ' | cut -d\  -f2- >> .gitignore
 
 		[ "`wc -l < .gitignore`" -lt 4000 ] && \
