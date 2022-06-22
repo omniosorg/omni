@@ -33,7 +33,7 @@ fi
 
 if (( relnum % 2 == 0 )); then
 	release="r$relnum"
-	branch=$relnum
+	branch="r$relnum"
 else
 	release=bloody
 	branch=master
