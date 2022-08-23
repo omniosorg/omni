@@ -1458,6 +1458,8 @@ function fnfind {
 		kernel/amd64/genunix \
 		platform/i86pc/kernel/amd64/unix \
 		kernel/drv/amd64 \
+		kernel/fs/amd64 \
+		kernel/sys/amd64 \
 		kernel/misc/amd64 \
 		kernel/socketmod/amd64 \
 		usr/kernel/drv/amd64 \
