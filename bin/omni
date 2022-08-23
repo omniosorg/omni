@@ -526,7 +526,6 @@ typeset -A medialist=(
 	[cloud-*.vmdk.zst]="omnios-@V@.cloud.vmdk"
 	[cloud-*.zfs.zst]="omnios-@V@.cloud.zfs.zst"
 	[*.bhyve.zst]="omnios-@V@.bhyve.zst"
-	[*.azure.vhd.zst]="omnios-@V@.azure.vhd.zst"
 )
 
 function sort_media {
