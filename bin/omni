@@ -67,6 +67,7 @@ fi
 : "${kayak_image:="rpool/kayak_image"}"
 : "${omnios_buildtmp:="$wd/tmp"}"
 : "${omnios_buildrepo:="$wd/repo"}"
+: "${braich_buildrepo:="$wd/repo"}"
 : "${illumos_env:="$wd/omnios.env"}"
 : "${illumos_logkeep:=7}"
 : "${extra_repos:=}"
@@ -511,6 +512,22 @@ function build_media {
 			    PKGURL="$PKGURL" \
 			    PREBUILT_ILLUMOS="$illumos_clone"
 		fi
+	)
+}
+
+function build_braich {
+	[ "`zonename`" = "global" ] || \
+	    abort "Install media can only be built in the global zone."
+
+	export PKGURL="${1:-file://$braich_buildrepo}"
+
+	banner "Building braich media from $PKGURL..."
+
+	(
+		cd "$kayak_clone"
+		$PFEXEC gmake zfsdestroy build-braich clean \
+		    PKGURL="$PKGURL" \
+		    PREBUILT_ILLUMOS="$illumos_clone"
 	)
 }
 
@@ -1564,6 +1581,8 @@ Operations (defaults for optional arguments are shown in []):
     update_extra	- update repositories in \$extra_repos              (ue)
     build_media [URL]   - build OmniOS install media (GZ only)             (bm)
                           Defaults to using local repo if URL not provided
+    build_braich [URL]  - build OmniOS braich media (GZ only)              (bb)
+                          Defaults to using local repo if URL not provided
     sort_media [v] [p]  - sort/rename install media (GZ only)              (sm)
                           [v] - version tag, e.g. r151038z
                           [p] - target path, defaults to /tmp/media_<v>
@@ -1640,6 +1659,7 @@ case $op in
 	uk|update_kayak)		update_kayak ;;
 	ue|update_extra)		update_extra ;;
 	bm|build_media)			build_media "$@" ;;
+	bb|build_braich)		build_braich "$@" ;;
 	sm|sort_media)			sort_media "$@" ;;
 	mail_msg|mm)			view_mail_msg ;;
 	it|illumos_tools)		illumos_tools ;;
