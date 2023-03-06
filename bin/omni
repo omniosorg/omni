@@ -167,6 +167,7 @@ function response {
 
 	echo "$c_highlight$msg $c_reset\\c" 1>&2
 	[ -n "$a" ] && echo "$c_error$a$c_reset" 1>&2
+	# shellcheck disable=SC1072,SC1020,SC1073,SC1009
 	while [[ "$a" != [$opts] ]]; do
 		read -r a
 		a="`echo "$a" | tr '[:upper:]' '[:lower:]'`"
