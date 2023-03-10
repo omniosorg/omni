@@ -117,6 +117,7 @@ Current configuration ($CFGFILE):
     OmniOS Build Area:    $omnios_buildtmp
     OmniOS Build Args:    $omnios_buildarg
     IPS Build Repo:       $omnios_buildrepo
+    IPS Braich Repo:      $braich_buildrepo
 
     Kayak Clone:          $kayak_clone
     LX Data Clone:        $lxdata_clone
