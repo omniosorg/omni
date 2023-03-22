@@ -125,6 +125,16 @@ Current configuration ($CFGFILE):
 EOM
 }
 
+function find_cmd {
+        typeset cmd="$1"
+        typeset var=$(echo $cmd | tr '[:lower:]' '[:upper:]')
+        typeset -n path="$var"
+        path=$(whence -fp "$cmd")
+        if (($? != 0)) || [ ! -x "$path" ]; then
+                errexit "Cannot find executable '$cmd' in PATH"
+        fi
+}
+
 function banner {
 	echo
 	echo "$c_banner*** $*$c_reset"
@@ -1059,10 +1069,7 @@ function omnios_pull_request {
 		return
 	fi
 
-	# Automate creation of the pull-request (experimental)
-	# Requires that your 2FA token is stored in your git config
-	# as user.token.
-	#     git config [--global] --add user.token <token>
+	find_cmd gh
 
 	prdata="`mktemp`"
 	[ "$branch" = "master" ] || commit_msg="$commit_msg ($branch)"
@@ -1079,7 +1086,11 @@ function omnios_pull_request {
 	else
 		if [ "`echo "$revs" | wc -w`" -ne 1 ]; then
 			banner "Multiple commits found"
-			prtitle="Core package updates"
+			if [ "$branch" = "master" ]; then
+				prtitle="Core package updates"
+			else
+				prtitle="Package updates ($branch)"
+			fi
 			cp /dev/null "$prdata"
 		else
 			echo "$commit_msg" > "$prdata"
@@ -1099,35 +1110,26 @@ function omnios_pull_request {
 		done
 	fi
 
+	typeset -a labels=()
 	if [ $releasepr -eq 0 ] && ask "Labels?"; then
-		patch=`mktemp`
-		cat <<- EOM > "$patch"
-		{
-			"labels": [
-				"package update"
-		EOM
+		labels+=("package update")
 		if [ "$branch" = "master" ]; then
-			ask "Backport to-do?" && echo ',"backport-todo"' \
-			    >> "$patch"
+			ask "Backport to-do?" && labels+=("backport-todo")
 		else
-			ask "Backport?" && echo ',"backport-PR"' >> "$patch"
+			ask "Backport?" && labels+=("backport-PR")
 		fi
-		cat <<-EOM >> "$patch"
-			]
-		}
-		EOM
-	else
-		patch=
 	fi
+	for l in "${!labels[@]}"; do
+		labels[$l]="--label=${labels[$l]}"
+	done
 
-	# token duser drepo dbranch suser sbranch title bodyfile patch
-	create_pull_request "$token" \
-		omniosorg omnios-build "$branch" \
-		"$gituser" "$_branch" \
-		"$prtitle" \
-		"$prdata" "$patch"
+	{
+		cd "$omnios_clone"
+		$GH pr create -B "$branch" "${labels[@]}" -a @me \
+		    -t "$prtitle" -F "$prdata"
+	}
 
-	rm -f "$prdata" "$patch"
+	rm -f "$prdata"
 
 	$git -C "$omnios_clone" checkout "$branch"
 }
