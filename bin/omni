@@ -684,13 +684,13 @@ function build_cscope {
 
 function mail_msg {
 	[ ! -d "$illumos_clone/log" ] && abort "No log directory present."
-	(
+	{
 		cd "$illumos_clone/log"
 		# shellcheck disable=SC2012
 		dir="`ls -1tr | fgrep 'log.' | tail -1`"
 		[ -f "$dir/mail_msg" ] || abort "Mail message not present."
 		echo "$illumos_clone/log/$dir/mail_msg"
-	)
+	}
 }
 
 function view_mail_msg {
@@ -845,88 +845,6 @@ function json_get_key {
 	grep "\"$key\":" "$file" | cut -d'"' -f4 | head -1
 }
 
-function github_request {
-	typeset auth="$1"
-	typeset api="$2"
-	typeset data="$3"
-	typeset method="${4:-POST}"
-	typeset op="`mktemp`"
-
-	typeset media='application/vnd.github.v3+json'
-	# Enable the draft pull request API
-	media='application/vnd.github.shadow-cat-preview+json'
-
-
-	curl -s -X "$method" \
-	    -o "$op" \
-	    -u "$auth" \
-	    -H "Accept: $media" \
-	    -H "Content-Type: application/json" \
-	    --data-binary "@$data" \
-	    "https://api.github.com/$api"
-
-	echo "$op"
-}
-
-function create_pull_request {
-	typeset token="$1"
-	typeset duser="$2"
-	typeset drepo="$3"
-	typeset dbranch="$4"
-	typeset suser="$5"
-	typeset sbranch="$6"
-	typeset title="$7"
-	typeset bodyfile="$8"
-	typeset patch="$9"
-
-	perl -i -p -e '
-		s/\n/\\n/g;
-		s/(["])/\\\1/g;
-	' "$bodyfile"
-
-	typeset data="`mktemp`"
-
-	cat <<- EOM > "$data"
-		{
-			"title":	"$title",
-			"head":		"$suser:$sbranch",
-			"base":		"$dbranch",
-			"draft":	true,
-			"body":		"`cat "$bodyfile"`"
-		}
-	EOM
-
-	op=`github_request "$suser:$token" \
-	    "repos/$duser/$drepo/pulls" "$data"`
-
-	rm -f "$data"
-
-	typeset prurl="`json_get_key "$op" html_url`"
-
-	if [ -z "$prurl" ]; then
-		cat "$op"
-		rm -f "$op"
-		abort "Problem creating PR"
-	fi
-
-	rm -f "$op"
-
-	echo "PR URL: $prurl"
-	number="`basename "$prurl"`"
-	echo "PR $number created, assigning label."
-
-	# Assign additional attributes via the issues API
-	if [ -n "$patch" -a -f "$patch" ]; then
-		op=`github_request "$suser:$token" \
-		    "repos/$duser/$drepo/issues/$number" "$patch" PATCH`
-		rm -f "$op"
-	fi
-
-	echo "Finished, the PR can be found at:"
-	echo
-	echo "    $prurl"
-}
-
 function illumos_pull_request {
 	_branch="`repo_branch "$illumos_clone"`"
 	typeset force
@@ -945,14 +863,12 @@ function illumos_pull_request {
 
 	reset_illumos_branch
 	$git -C "$illumos_clone" push -u origin "$_branch"
-	$git -C "$illumos_clone" checkout "$branch"
 
 	prbase="https://github.com/omniosorg/illumos-omnios/compare"
 	prbranch="$branch...$gituser:$_branch?expand=1"
 
 	echo
-	token="`$git config user.token`"
-	if [ -z "$token" ] || ! ask "Create PR automatically on GitHub?"; then
+	if ! ask "Create PR automatically on GitHub?"; then
 		cat <<- EOM
 			Local branch $_branch has been pushed to github.
 			Visit the following URL to create a pull-request:
@@ -963,10 +879,7 @@ function illumos_pull_request {
 		return
 	fi
 
-	# Automate creation of the pull-request (experimental)
-	# Requires that your 2FA token is stored in your git config
-	# as user.token.
-	#     git config [--global] --add user.token <token>
+	find_cmd gh
 
 	if [[ "`uname -v`" = omnios-${_branch/\//-}-* ]]; then
 		uname="`uname -a`"
@@ -979,6 +892,7 @@ function illumos_pull_request {
 	prdata=`mktemp`
 	case "$type" in
 		upstream)
+			[ -f "`mail_msg`" ] || fatal "No mail_msg"
 			tag="Upstream merge"
 			cat << EOM > "$prdata"
 Weekly upstream for $_branch
@@ -1012,25 +926,24 @@ EOM
 \`\`\`
 EOM
 
-	if [ "$type" = "upstream" ]; then
-		patch=`mktemp`
-		cat <<- EOM > "$patch"
-			{
-				"labels": [
-					"upstream-merge"
-				]
-			}
-		EOM
-	fi
+	prtitle="$tag $_branch"
 
-	# token duser drepo dbranch suser sbranch title bodyfile patch
-	create_pull_request "$token" \
-		omniosorg illumos-omnios "$branch" \
-		"$gituser" "$_branch" \
-		"$tag $_branch" \
-		"$prdata" "$patch"
+	typeset -a labels=()
+	[ "$type" = "upstream" ] && labels+=("upstream-merge")
 
-	rm -f "$prdata" "$patch"
+	for l in "${!labels[@]}"; do
+		labels[$l]="--label=${labels[$l]}"
+	done
+
+	{
+		cd "$illumos_clone"
+		$GH pr create -d -B "$branch" "${labels[@]}" -a @me \
+		    -t "$prtitle" -F "$prdata"
+	}
+
+	rm -f "$prdata"
+
+	$git -C "$illumos_clone" checkout "$branch"
 }
 
 function omnios_pull_request {
@@ -1056,8 +969,7 @@ function omnios_pull_request {
 	prbranch="$branch...$gituser:$_branch?expand=1"
 
 	echo
-	token="`$git config user.token`"
-	if [ -z "$token" ] || ! ask "Create PR automatically on GitHub?"; then
+	if ! ask "Create PR automatically on GitHub?"; then
 		cat <<- EOM
 			Local branch $_branch has been pushed to github.
 			Visit the following URL to create a pull-request:
