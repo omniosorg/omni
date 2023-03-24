@@ -71,11 +71,8 @@ fi
 : "${illumos_env:="$wd/omnios.env"}"
 : "${illumos_logkeep:=7}"
 : "${extra_repos:=}"
-if [ "$branch" != r151022 ]; then
-	: "${omnios_buildarg:="parallel 3"}"
-else
-	: "${omnios_buildarg:="continue"}"
-fi
+: "${omnios_buildarg:="parallel 3"}"
+: "${braich_buildarg:="parallel 3"}"
 : "${role:=1}"
 : "${answer:=}"
 : "${release:=unknown}"
@@ -116,6 +113,7 @@ Current configuration ($CFGFILE):
     OmniOS Clone:         $omnios_clone
     OmniOS Build Area:    $omnios_buildtmp
     OmniOS Build Args:    $omnios_buildarg
+    Braich Build Args:    $braich_buildarg
     IPS Build Repo:       $omnios_buildrepo
     IPS Braich Repo:      $braich_buildrepo
 
@@ -492,6 +490,17 @@ function build_omnios {
 	)
 }
 
+function build_braich {
+	typeset arg="${*:-${braich_buildarg}}"
+	[[ "$arg" = -? ]] && arg+=" ${braich_buildarg}"
+	(
+		cd "$omnios_clone/build"
+		[ -z "$USER" -a -n "$LOGNAME" ] && USER="$LOGNAME"
+		# shellcheck disable=SC2086
+		ctrun -l child -o noorphan ./buildctl -a aarch64 build $arg
+	)
+}
+
 function build_world {
 	build_illumos &
 	build_omnios "$@"
@@ -527,7 +536,7 @@ function build_media {
 	)
 }
 
-function build_braich {
+function braich_media {
 	[ "`zonename`" = "global" ] || \
 	    abort "Install media can only be built in the global zone."
 
@@ -1487,6 +1496,7 @@ Operations (defaults for optional arguments are shown in []):
 
     update_omnios       - update your local omnios build environment       (uo)
     build_omnios [args] - build OmniOS `printf "%-36s" "[$omnios_buildarg]"`(bo)
+    build_braich [args] - build braich `printf "%-36s" "[$braich_buildarg]"`(bb)
 
     update_world        - update local illumos and omnios                  (uw)
     build_world [args]  - build illumos-omnios and OmniOS in parallel      (bw)
@@ -1497,7 +1507,7 @@ Operations (defaults for optional arguments are shown in []):
     update_extra	- update repositories in \$extra_repos              (ue)
     build_media [URL]   - build OmniOS install media (GZ only)             (bm)
                           Defaults to using local repo if URL not provided
-    build_braich [URL]  - build OmniOS braich media (GZ only)              (bb)
+    braich_media [URL]  - build OmniOS braich media (GZ only)              (bbm)
                           Defaults to using local repo if URL not provided
     sort_media [v] [p]  - sort/rename install media (GZ only)              (sm)
                           [v] - version tag, e.g. r151038z
@@ -1570,12 +1580,13 @@ case $op in
 	bi|build_illumos)		build_illumos "$@" ;;
 	uo|update_omnios)		update_omnios ;;
 	bo|build_omnios)		build_omnios "$@" ;;
+	bb|build_braich)		build_braich "$@" ;;
 	uw|update_world)		update_world ;;
 	bw|build_world)			build_world "$@" ;;
 	uk|update_kayak)		update_kayak ;;
 	ue|update_extra)		update_extra ;;
 	bm|build_media)			build_media "$@" ;;
-	bb|build_braich)		build_braich "$@" ;;
+	bbm|braich_media)		braich_media "$@" ;;
 	sm|sort_media)			sort_media "$@" ;;
 	mail_msg|mm)			view_mail_msg ;;
 	it|illumos_tools)		illumos_tools ;;
