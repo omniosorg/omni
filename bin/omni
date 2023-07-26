@@ -957,6 +957,7 @@ EOM
 
 function omnios_pull_request {
 	_branch="`repo_branch "$omnios_clone"`"
+	typeset args="$@"
 
 	[ "$_branch" = "$branch" ] && abort "Not on suitable branch."
 
@@ -1047,7 +1048,7 @@ function omnios_pull_request {
 	{
 		cd "$omnios_clone"
 		$GH pr create -B "$branch" "${labels[@]}" -a @me \
-		    -t "$prtitle" -F "$prdata"
+		    -t "$prtitle" -F "$prdata" $args
 	}
 
 	rm -f "$prdata"
