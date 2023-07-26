@@ -67,7 +67,7 @@ fi
 : "${kayak_image:="rpool/kayak_image"}"
 : "${omnios_buildtmp:="$wd/tmp"}"
 : "${omnios_buildrepo:="$wd/repo"}"
-: "${braich_buildrepo:="$wd/repo"}"
+: "${braich_buildrepo:="$wd/repo.aarch64"}"
 : "${illumos_env:="$wd/omnios.env"}"
 : "${illumos_logkeep:=7}"
 : "${extra_repos:=}"
