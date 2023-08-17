@@ -13,7 +13,7 @@
 #
 # }}}
 #
-# Copyright 2022 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2023 OmniOS Community Edition (OmniOSce) Association.
 
 export PATH=/usr/bin:/usr/sbin:/opt/ooce/bin
 export OMNIVER=master
@@ -707,18 +707,21 @@ function view_mail_msg {
 }
 
 function reset_buildrepo {
-	echo "Clearing build IPS repository..."
-	[ -d "$omnios_buildrepo" ] && rm -rf "$omnios_buildrepo"
-	pkgrepo create "$omnios_buildrepo"
-	pkgrepo add-publisher -s "$omnios_buildrepo" omnios
-	pkgrepo -s "$omnios_buildrepo" info
+	typeset repo="$1"
+
+	echo "Clearing build IPS repository ($repo)..."
+	[ -d "$repo" ] && rm -rf "$repo"
+	pkgrepo create "$repo"
+	pkgrepo add-publisher -s "$repo" omnios
+	pkgrepo -s "$repo" info
 }
 
 function cleanup_omnios {
 	echo "Clearing temporary build directory..."
 	[ -d "$omnios_buildtmp" ] && rm -rf "$omnios_buildtmp"
 	[ -d "$omnios_clone/tmp.repo" ] && rm -rf "$omnios_clone/tmp.repo"
-	reset_buildrepo
+	reset_buildrepo "$omnios_buildrepo"
+	reset_buildrepo "$braich_buildrepo"
 	echo "Removing build logs..."
 	find "$omnios_clone" -type f -name build.log\* -exec rm -f {} +
 	echo "Removing build links..."
