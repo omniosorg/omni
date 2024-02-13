@@ -706,11 +706,23 @@ function view_mail_msg {
 	less -X "`mail_msg`"
 }
 
+function zfsrollback {
+	typeset dir="$1"
+
+	typeset mp=`zfs get -H -o value mountpoint "$dir"`
+	[ "$dir" = "$mp" ] || return
+	typeset src=`zfs get -H -o value name "$dir"`
+	[ -n "$src" ] || return
+	echo "+ Rolling back ZFS snapshot $src@empty"
+	$PFEXEC zfs rollback "$src@empty"
+}
+
 function reset_buildrepo {
 	typeset repo="$1"
 
 	echo "Clearing build IPS repository ($repo)..."
-	[ -d "$repo" ] && rm -rf "$repo"
+	[ -d "$repo/.zfs" ] && zfsrollback "$repo"
+	[ -d "$repo" ] && rm -rf "$repo/*"
 	pkgrepo create "$repo"
 	pkgrepo add-publisher -s "$repo" omnios
 	pkgrepo -s "$repo" info
@@ -718,8 +730,10 @@ function reset_buildrepo {
 
 function cleanup_omnios {
 	echo "Clearing temporary build directory..."
-	[ -d "$omnios_buildtmp" ] && rm -rf "$omnios_buildtmp"
-	[ -d "$omnios_clone/tmp.repo" ] && rm -rf "$omnios_clone/tmp.repo"
+	for d in "$omnios_buildtmp" "$omnios_clone/tmp.repo"; do
+		[ -d "$d/.zfs" ] && zfsrollback "$d"
+		[ -d "$d" ] && rm -rf "$d/*"
+	done
 	reset_buildrepo "$omnios_buildrepo"
 	reset_buildrepo "$braich_buildrepo"
 	echo "Removing build logs..."
