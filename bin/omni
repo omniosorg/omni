@@ -562,10 +562,14 @@ typeset -A medialist=(
 	[kayak_*.ngz.zfs.xz]="omnios-@V@.ngz.zfs.xz"
 	[kayak_*.zfs.xz]="omnios-@V@.zfs.xz"
 	[cloud-*.raw.zst]="omnios-@V@.cloud.raw.zst"
-	[cloud-*.vhd.zst]="omnios-@V@.cloud.vhd.zst"
-	[cloud-*.vmdk.zst]="omnios-@V@.cloud.vmdk"
+	[cloud-*.vmdk]="omnios-@V@.cloud.vmdk"
+	[cloud-*.vhd]="omnios-@V@.cloud.vhd"
+	[cloud-*.qcow2]="omnios-@V@.cloud.qcow2"
 	[cloud-*.zfs.zst]="omnios-@V@.cloud.zfs.zst"
 	[*.bhyve.zst]="omnios-@V@.bhyve.zst"
+	# Legacy, but we still check for them and copy if necessary
+	[cloud-*.vhd.zst]="omnios-@V@.cloud.vhd.zst"
+	[cloud-*.vmdk.zst]="omnios-@V@.cloud.vmdk"
 )
 
 function sort_media {
