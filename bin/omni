@@ -504,8 +504,10 @@ function build_braich {
 function build_world {
 	build_illumos &
 	build_omnios "$@"
-	echo "Waiting for illumos build..."
-	wait
+	(($? == 0)) && {
+		echo "Waiting for illumos build..."
+		wait
+	}
 }
 
 function build_media {
