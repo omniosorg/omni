@@ -13,7 +13,7 @@
 #
 # }}}
 #
-# Copyright 2023 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2024 OmniOS Community Edition (OmniOSce) Association.
 
 export PATH=/usr/bin:/usr/sbin:/opt/ooce/bin
 export OMNIVER=master
@@ -728,7 +728,7 @@ function reset_buildrepo {
 
 	echo "Clearing build IPS repository ($repo)..."
 	[ -d "$repo/.zfs" ] && zfsrollback "$repo"
-	[ -d "$repo" ] && rm -rf "$repo/*"
+	[ -d "$repo" ] && rm -rf "$repo"/*
 	pkgrepo create "$repo"
 	pkgrepo add-publisher -s "$repo" omnios
 	pkgrepo -s "$repo" info
@@ -738,7 +738,7 @@ function cleanup_omnios {
 	echo "Clearing temporary build directory..."
 	for d in "$omnios_buildtmp" "$omnios_clone/tmp.repo"; do
 		[ -d "$d/.zfs" ] && zfsrollback "$d"
-		[ -d "$d" ] && rm -rf "$d/*"
+		[ -d "$d" ] && rm -rf "$d"/*
 	done
 	reset_buildrepo "$omnios_buildrepo"
 	reset_buildrepo "$braich_buildrepo"
