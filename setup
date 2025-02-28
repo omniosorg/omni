@@ -111,7 +111,7 @@ check_publisher()
 		if ask "Add it?"; then
 			echo
 			sudo pkg set-publisher \
-			    -g $ips/$release/extra extra.omnios || exit 1
+			    -g "$ips/$release/extra extra.omnios" || exit 1
 
 			pkg publisher
 		else
