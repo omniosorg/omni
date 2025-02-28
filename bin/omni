@@ -13,7 +13,7 @@
 #
 # }}}
 #
-# Copyright 2024 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2025 OmniOS Community Edition (OmniOSce) Association.
 
 export PATH=/usr/bin:/usr/sbin:/opt/ooce/bin
 export OMNIVER=master
@@ -344,7 +344,7 @@ function upstream_diff {
 		echo
 		$git -c color.ui=always log \
 		    --reverse --no-merges --abbrev-commit \
-		    --grep='^OS-' \
+		    --grep='^OS-' --grep='^LX' \
 		    --pretty="tformat: $pp" \
 		    "$hash..$head" \
 		    | ud_process "$arg" https://smartos.org/bugview
