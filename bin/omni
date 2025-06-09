@@ -334,11 +334,11 @@ function upstream_diff {
 		$git -c color.ui=always log \
 		    --reverse --no-merges --abbrev-commit \
 		    --pretty="tformat: $pp" \
-		    master..upstream_gate \
+		    master..origin/upstream_gate \
 		    | ud_process "$arg" https://www.illumos.org/issues
 
 		hash="`joyent_commit`"
-		head="`$git rev-parse upstream_joyent`"
+		head="`$git rev-parse origin/upstream_joyent`"
 		echo "$c_reset"
 		echo "JOYENT ($hash..):"
 		echo
