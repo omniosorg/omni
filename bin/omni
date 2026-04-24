@@ -52,7 +52,7 @@ Where <build directory> points to an empty directory that will be used
 for building OmniOS.
 
 	EOM
-	exit 0
+	exit 1
 fi
 
 # shellcheck disable=SC1090
