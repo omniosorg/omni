@@ -43,6 +43,8 @@ ask()
 {
 	typeset a=
 
+	[ -t 0 ] || return 1
+
 	echo "$* (y/n) \\c"
 	while [[ "$a" != [yYnN] ]]; do
 		read -r a
