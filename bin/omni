@@ -465,7 +465,7 @@ function build_illumos {
 	[ -f "$logf" ] && rm -f "$logf"
 
 	illumos_tools
-	ctrun -l child -o noorphan "$ILLUMOS_TOOLS/nightly" "$env" &
+	ctrun -l child -o noorphan "$ILLUMOS_TOOLS/nightly" -W "$env" &
 	nightlypid=$!
 
 	(
@@ -476,11 +476,13 @@ function build_illumos {
 		    egrep '^(====|real |user |sys |primary:|shadow:)'
 	) &
 
+	typeset -i rc=0
 	trap terminate_illumos INT
-	wait $nightlypid
+	wait $nightlypid || rc=$?
 	trap - INT
 	terminate_illumos
 	sleep 10
+	return $rc
 }
 
 function build_omnios {
