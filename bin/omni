@@ -125,10 +125,10 @@ EOM
 
 function find_cmd {
         typeset cmd="$1"
-        typeset var=$(echo $cmd | tr '[:lower:]' '[:upper:]')
+        typeset var
+        var=$(echo "$cmd" | tr '[:lower:]' '[:upper:]')
         typeset -n path="$var"
-        path=$(whence -fp "$cmd")
-        if (($? != 0)) || [ ! -x "$path" ]; then
+        if ! path=$(whence -fp "$cmd") || [ ! -x "$path" ]; then
                 errexit "Cannot find executable '$cmd' in PATH"
         fi
 }
@@ -225,7 +225,8 @@ function check_repo {
 
 	banner "Checking repository $repo ($branch)"
 
-	typeset actual_branch="`repo_branch "$repo"`"
+	typeset actual_branch
+	actual_branch="`repo_branch "$repo"`"
 
 	if [ "$actual_branch" != "$branch" ]; then
 		abort "$repo is not on $branch branch ($actual_branch)"
@@ -236,7 +237,8 @@ function check_child {
 	typeset repo="${1:?}"
 	typeset branch="${2:?}"
 
-	typeset _branch="`repo_branch "$repo"`"
+	typeset _branch
+	_branch="`repo_branch "$repo"`"
 
 	$gitp -C "$repo" branch --contains "$branch" \
 	    | egrep -s "^\\*? *$_branch\$" \
@@ -389,7 +391,7 @@ function update_kayak {
 function update_extra {
 	for repo in $extra_repos; do
 		check_repo "$repo" "$branch"
-		banner "Updating $release `basename $repo`"
+		banner "Updating $release `basename "$repo"`"
 		(
 			cd "$repo"
 			$git pull upstream "$branch" --rebase --no-edit
@@ -440,10 +442,12 @@ function env_illumos {
 function build_illumos {
 	typeset env="${1:-${illumos_env}}"
 
-	typeset benv="`basename "$env"`"
+	typeset benv
+	benv="`basename "$env"`"
 	banner "Starting illumos-omnios $release build... ($benv)"
 
-	typeset _ws="`grep 'export CODEMGR_WS=' "$env" | head -1 | cut -d= -f2`"
+	typeset _ws
+	_ws="`grep 'export CODEMGR_WS=' "$env" | head -1 | cut -d= -f2`"
 	[ -d "$_ws" ] || _ws="$illumos_clone"
 
 	echo "Workspace: $_ws"
@@ -484,6 +488,7 @@ function build_omnios {
 	[[ "$arg" = -? ]] && arg+=" ${omnios_buildarg}"
 	(
 		cd "$omnios_clone/build"
+		# shellcheck disable=SC2030
 		[ -z "$USER" -a -n "$LOGNAME" ] && USER="$LOGNAME"
 		# shellcheck disable=SC2086
 		ctrun -l child -o noorphan ./buildctl build $arg
@@ -495,6 +500,7 @@ function build_braich {
 	[[ "$arg" = -? ]] && arg+=" ${braich_buildarg}"
 	(
 		cd "$omnios_clone/build"
+		# shellcheck disable=SC2031
 		[ -z "$USER" -a -n "$LOGNAME" ] && USER="$LOGNAME"
 		# shellcheck disable=SC2086
 		ctrun -l child -o noorphan ./buildctl -a aarch64 build $arg
@@ -503,11 +509,9 @@ function build_braich {
 
 function build_world {
 	build_illumos &
-	build_omnios "$@"
-	(($? == 0)) && {
-		echo "Waiting for illumos build..."
-		wait
-	}
+	build_omnios "$@" || return
+	echo "Waiting for illumos build..."
+	wait
 }
 
 function build_media {
@@ -529,8 +533,8 @@ function build_media {
 			    PKGURL="$PKGURL" \
 			    PREBUILT_ILLUMOS="$illumos_clone"
 		else
-			zfs list $kayak_image >/dev/null 2>&1 && \
-			    $PFEXEC zfs destroy -R $kayak_image
+			zfs list "$kayak_image" >/dev/null 2>&1 && \
+			    $PFEXEC zfs destroy -R "$kayak_image"
 			$PFEXEC gmake install-usb clean \
 			    PKGURL="$PKGURL" \
 			    PREBUILT_ILLUMOS="$illumos_clone"
@@ -579,7 +583,8 @@ function sort_media {
 	typeset v="${1}"
 	typeset p="${2}"
 
-	typeset src=`zfs get -H -o value mountpoint $kayak_image`
+	typeset src
+	src=`zfs get -H -o value mountpoint "$kayak_image"`
 	[ -d "$src" ] || abort "Cannot determine mountpoint for $kayak_image"
 
 	if [ -z "$v" ]; then
@@ -715,9 +720,11 @@ function view_mail_msg {
 function zfsrollback {
 	typeset dir="$1"
 
-	typeset mp=`zfs get -H -o value mountpoint "$dir"`
+	typeset mp
+	mp=`zfs get -H -o value mountpoint "$dir"`
 	[ "$dir" = "$mp" ] || return
-	typeset src=`zfs get -H -o value name "$dir"`
+	typeset src
+	src=`zfs get -H -o value name "$dir"`
 	[ -n "$src" ] || return
 	echo "+ Rolling back ZFS snapshot $src@empty"
 	$PFEXEC zfs rollback "$src@empty"
@@ -728,7 +735,7 @@ function reset_buildrepo {
 
 	echo "Clearing build IPS repository ($repo)..."
 	[ -d "$repo/.zfs" ] && zfsrollback "$repo"
-	[ -d "$repo" ] && rm -rf "$repo"/*
+	[ -d "$repo" ] && rm -rf "${repo:?}"/*
 	pkgrepo create "$repo"
 	pkgrepo add-publisher -s "$repo" omnios
 	pkgrepo -s "$repo" info
@@ -738,7 +745,7 @@ function cleanup_omnios {
 	echo "Clearing temporary build directory..."
 	for d in "$omnios_buildtmp" "$omnios_clone/tmp.repo"; do
 		[ -d "$d/.zfs" ] && zfsrollback "$d"
-		[ -d "$d" ] && rm -rf "$d"/*
+		[ -d "$d" ] && rm -rf "${d:?}"/*
 	done
 	reset_buildrepo "$omnios_buildrepo"
 	reset_buildrepo "$braich_buildrepo"
@@ -814,12 +821,12 @@ function branches {
 		[ "$all" -eq 1 ] || continue
 
 		merged=()
-		git -C "$repo" branch --merged | while IFS="" read -r line; do
+		git -C "$repo" branch --merged | sed 's/..//' | while read -r line; do
 			merged+=("$line")
 		done
 		$git -C "$repo" branch | sed 's/..//' | while read -r  b; do
 			ismerged=0
-			for l in ${merged[*]}; do
+			for l in "${merged[@]}"; do
 				[ "$l" = "$b" ] && ismerged=1 && break
 			done
 			[ "$b" = "$_br" ] && ismerged=0
@@ -870,6 +877,7 @@ function abort_gate {
 }
 
 # Should use `jq` - add to omnios-extra?
+# shellcheck disable=SC2317
 function json_get_key {
 	typeset file="$1"
 	typeset key="$2"
@@ -964,7 +972,7 @@ EOM
 	[ "$type" = "upstream" ] && labels+=("upstream-merge")
 
 	for l in "${!labels[@]}"; do
-		labels[$l]="--label=${labels[$l]}"
+		labels[l]="--label=${labels[l]}"
 	done
 
 	{
@@ -980,7 +988,7 @@ EOM
 
 function omnios_pull_request {
 	_branch="`repo_branch "$omnios_clone"`"
-	typeset args="$@"
+	typeset -a args=("$@")
 
 	[ "$_branch" = "$branch" ] && abort "Not on suitable branch."
 
@@ -1065,13 +1073,13 @@ function omnios_pull_request {
 		fi
 	fi
 	for l in "${!labels[@]}"; do
-		labels[$l]="--label=${labels[$l]}"
+		labels[l]="--label=${labels[l]}"
 	done
 
 	{
 		cd "$omnios_clone"
 		$GH pr create -B "$branch" "${labels[@]}" -a @me \
-		    -t "$prtitle" -F "$prdata" $args
+		    -t "$prtitle" -F "$prdata" "${args[@]}"
 	}
 
 	rm -f "$prdata"
@@ -1080,13 +1088,15 @@ function omnios_pull_request {
 }
 
 function lx_check_branch {
-	typeset _branch="`repo_branch "$illumos_clone"`"
+	typeset _branch
+	_branch="`repo_branch "$illumos_clone"`"
 	[[ "$_branch" =~ (joyent|upstream)_merge/* ]] || \
 	    abort "On wrong branch, $_branch (have you run lx_begin?)"
 }
 
 function lx_begin {
-	typeset cbranch="`repo_branch "$illumos_clone"`"
+	typeset cbranch
+	cbranch="`repo_branch "$illumos_clone"`"
 	[[ "$cbranch" != "$branch" && "$cbranch" != upstream_merge/* ]] \
 	    && abort "Not on a suitable branch to begin lx merge ($cbranch)"
 	check_repo "$lxdata_clone" "$branch"
@@ -1139,9 +1149,12 @@ function lx_stat {
 	lx_check_branch
 	[ -f "${ij}-ALL-commits" ] || abort "No LX merge session in progress"
 
-	typeset tc="`wc -l < "${ij}-TODO-commits"`"
-	typeset pc="`wc -l < /dev/null`"
-	typeset sc="`wc -l < /dev/null`"
+	typeset tc
+	tc="`wc -l < "${ij}-TODO-commits"`"
+	typeset pc
+	pc="`wc -l < /dev/null`"
+	typeset sc
+	sc="`wc -l < /dev/null`"
 	[ -f "${ij}-picked-commits" ] && pc="`wc -l < "${ij}-picked-commits"`"
 	[ -f "${ij}-skipped-commits" ] && sc="`wc -l < "${ij}-skipped-commits"`"
 
@@ -1277,7 +1290,8 @@ function lx_end {
 	    abort "Not all commits have been evaluated,"\
 	    "run 'lx_pick' until none remain."
 
-	typeset _branch="`repo_branch "$illumos_clone"`"
+	typeset _branch
+	_branch="`repo_branch "$illumos_clone"`"
 	lasthash="`tail -1 "$lxdata_clone/ij-decided-commits"`"
 
 	(
@@ -1328,7 +1342,8 @@ function lx_abort {
 
 	ask "Stop lx merge and reset state?" || exit 0
 
-	typeset _branch="`repo_branch "$illumos_clone"`"
+	typeset _branch
+	_branch="`repo_branch "$illumos_clone"`"
 	$git -C "$illumos_clone" reset HEAD --hard
 	$git -C "$illumos_clone" checkout master
 	$git -C "$illumos_clone" branch -D "$_branch"
@@ -1394,7 +1409,8 @@ function fnfind_obj {
 	typeset object="$1"
 	typeset token="$2"
 
-	typeset sobject="`echo "$object" | sed 's^.*/root_i386[^/]*^^g'`"
+	typeset sobject
+	sobject="`echo "$object" | sed 's^.*/root_i386[^/]*^^g'`"
 
 	if [ -d "$object" ]; then
 		find "$object" -type f -perm -+x | while read -r f; do
@@ -1441,7 +1457,8 @@ function expand_pkg {
 
 	banner "Pulling $pkg from $PKGURL..." >> /dev/stderr
 
-	typeset tmpdir="`mktemp -d`"
+	typeset tmpdir
+	tmpdir="`mktemp -d`"
 	pkgrecv -s "$PKGURL" -d "$tmpdir" --raw -m latest "$pkg" >> /dev/stderr
 	for d in "$tmpdir/$pkg/"*; do
 		[ -d "$d" ] || continue
@@ -1451,7 +1468,8 @@ function expand_pkg {
 }
 
 function patch_motd {
-	typeset tmpdir="`expand_pkg SUNWcs "$@"`"
+	typeset tmpdir
+	tmpdir="`expand_pkg SUNWcs "$@"`"
 
 	cd "$tmpdir" || exit 1
 
