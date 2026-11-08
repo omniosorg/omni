@@ -36,6 +36,7 @@ rm -f $tf
 sed -i -E '
 	/^# Conflicts:/,/^#$/s/^# *//
 	/^(Reviewed|(Portions )?[Cc]ontributed|Approved|Contributed)[- ][Bb]y/d
+	/^Imported[ -][Ff]rom/d
 ' "$file"
 
 exit 0
